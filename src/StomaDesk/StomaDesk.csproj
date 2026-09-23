@@ -1,0 +1,51 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    iStoma was started in 2012, the year of Visual Studio 2012, .NET Framework 4.5 and C# 5.
+    LangVersion 5 makes the compiler reject anything newer (string interpolation, ?., nameof,
+    expression-bodied members, out var, tuples), so the code reads like a WinForms codebase of that era.
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net45</TargetFramework>
+    <LangVersion>5</LangVersion>
+    <RootNamespace>StomaDesk</RootNamespace>
+    <AssemblyName>StomaDesk</AssemblyName>
+    <Product>StomaDesk</Product>
+    <AssemblyTitle>StomaDesk, gestiune cabinet stomatologic</AssemblyTitle>
+    <Version>1.0.0</Version>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="System.Windows.Forms" />
+  </ItemGroup>
+
+  <!-- Lets the .NET SDK build a .NET Framework 4.5 exe on Linux (no Windows or Visual Studio needed). -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!-- Designer nesting, the same entries Visual Studio writes for forms and user controls. -->
+  <ItemGroup>
+    <Compile Update="Controls\OdontogramControl.cs" SubType="Component" />
+    <Compile Update="Forms\StoreView.cs" SubType="UserControl" />
+    <Compile Update="Forms\MainForm.cs" SubType="Form" />
+    <Compile Update="Forms\MainForm.Designer.cs" DependentUpon="MainForm.cs" />
+    <Compile Update="Forms\PatientsView.cs" SubType="UserControl" />
+    <Compile Update="Forms\PatientsView.Designer.cs" DependentUpon="PatientsView.cs" />
+    <Compile Update="Forms\AgendaView.cs" SubType="UserControl" />
+    <Compile Update="Forms\AgendaView.Designer.cs" DependentUpon="AgendaView.cs" />
+    <Compile Update="Forms\ReportsView.cs" SubType="UserControl" />
+    <Compile Update="Forms\ReportsView.Designer.cs" DependentUpon="ReportsView.cs" />
+    <Compile Update="Forms\SettingsView.cs" SubType="UserControl" />
+    <Compile Update="Forms\SettingsView.Designer.cs" DependentUpon="SettingsView.cs" />
+    <Compile Update="Forms\PatientForm.cs" SubType="Form" />
+    <Compile Update="Forms\PatientForm.Designer.cs" DependentUpon="PatientForm.cs" />
+    <Compile Update="Forms\AppointmentForm.cs" SubType="Form" />
+    <Compile Update="Forms\AppointmentForm.Designer.cs" DependentUpon="AppointmentForm.cs" />
+    <Compile Update="Forms\PatientCardForm.cs" SubType="Form" />
+    <Compile Update="Forms\PatientCardForm.Designer.cs" DependentUpon="PatientCardForm.cs" />
+  </ItemGroup>
+
+</Project>
