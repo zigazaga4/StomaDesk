@@ -16,6 +16,24 @@ Aplicație desktop de gestiune pentru un cabinet stomatologic, scrisă în **C# 
 
 ![Odontograma](docs/odontograma.png)
 
+## Aspect
+
+Tot aspectul stă într-un singur loc, `Ui/Theme.cs`: paleta (teal clinic), fonturile și felul în care arată controalele standard. Fiecare fereastră apelează `Theme.Apply(this)` după `InitializeComponent`, deci fișierele `.Designer.cs` rămân cu valorile obișnuite WinForms, iar o culoare se schimbă o singură dată, nu în patruzeci de property grid-uri.
+
+| Element | Cum e făcut |
+|---|---|
+| bara laterală și tab-urile din fișa pacientului | `Controls/NavBar.cs`, desenat cu GDI+; înlocuiește `TabControl`, al cărui header nu se poate restiliza pe Mono |
+| butoane | `FlatStyle.Flat` cu trei tipuri: `Theme.Primary`, `Theme.Destructive` și secundar (implicit) |
+| câmpuri text | fără border propriu; părintele desenează un cadru rotunjit, teal când câmpul are focus |
+| grupuri de câmpuri | `Controls/Card.cs`, panou alb rotunjit cu titlu, în locul `GroupBox` |
+| statusuri și sold | pastile colorate: `Controls/Badge.cs` și `Grid.BadgeColumn` |
+| inițialele pacientului | `Controls/Avatar.cs`, culoarea vine din nume, deci e aceeași peste tot |
+| agenda | fiecare celulă desenată în `CellPainting`: carduri în culoarea medicului, linia roșie a orei curente |
+| meniuri și bara de stare | `ToolStripProfessionalRenderer` cu un `ProfessionalColorTable` propriu |
+| iconițe și logo | `Ui/Glyphs.cs`, linii pe o grilă 24 x 24; iconița ferestrei e construită în memorie de `Ui/IconMaker.cs`, fără fișiere imagine |
+
+![Nomenclatoare](docs/nomenclatoare.png)
+
 ## De ce .NET Framework 4.5 și C# 5
 
 Am plecat de la ce se știe public despre iDava:
@@ -80,7 +98,7 @@ Opțiuni în linia de comandă:
 |---|---|
 | `./run.sh --data fisier.xml` | lucrează pe alt fișier de date |
 | `./run.sh --selftest` | 51 de verificări fără interfață (CNP, căutare, suprapuneri, sold, SMS, rapoarte, desenare); codul de ieșire 0 înseamnă totul în regulă |
-| `./run.sh --smoke --out folder` | deschide fiecare fereastră și fiecare tab și salvează câte o captură în folder |
+| `./run.sh --smoke --out folder` | deschide fiecare fereastră și fiecare pagină și salvează câte o captură în folder (pe Windows prin GDI, pe Linux cu Mono prin X11) |
 
 ## Rulare pe Windows
 
@@ -93,10 +111,10 @@ src/StomaDesk/
   Models/        clasele de date: Patient, Appointment, TreatmentItem, Payment, Doctor, Procedure
   Data/          ClinicStore (toate regulile și salvarea), XmlClinicFile, SampleData
   Services/      CNP, telefon, formatare, remindere SMS, rapoarte, deviz (GDI+ și tipărire)
-  Controls/      OdontogramControl, controlul desenat de mână
-  Forms/         ferestrele și tab-urile, fiecare cu fișierul lui .Designer.cs
-  Ui/            ajutoare comune pentru DataGridView, ComboBox, mesaje, culori
-  Diagnostics/   self-test, smoke test, jurnal de erori
+  Controls/      controale desenate de mână: OdontogramControl, NavBar, Card, Badge, Avatar
+  Forms/         ferestrele și paginile, fiecare cu fișierul lui .Designer.cs
+  Ui/            Theme (aspectul), Glyphs (iconițe), ajutoare pentru DataGridView, ComboBox, mesaje
+  Diagnostics/   self-test, smoke test cu capturi de ecran, jurnal de erori
 ```
 
 ## Ce exersează, legat de munca la un produs ca iStoma
@@ -106,6 +124,9 @@ src/StomaDesk/
 | fișiere Designer, `InitializeComponent`, evenimente legate în designer | `Forms/*.Designer.cs` |
 | `DataGridView` needitabil cu `Tag` pe rând și editabil legat la `BindingList<T>` | `Ui/Grid.cs`, `Forms/SettingsView.cs` |
 | control personalizat: `OnPaint`, hit test, tastatură, `ToolTip`, `ContextMenuStrip` | `Controls/OdontogramControl.cs` |
+| controale proprii refolosibile, `SetStyle` (double buffering, `UserPaint`), `DisplayRectangle` suprascris | `Controls/NavBar.cs`, `Controls/Card.cs` |
+| celule desenate de mână în `DataGridView` cu `CellPainting` | `Forms/AgendaView.cs`, `Ui/Grid.cs` |
+| temă aplicată pe tot arborele de controale, `ConditionalWeakTable`, `ProfessionalColorTable` | `Ui/Theme.cs` |
 | validare cu `ErrorProvider`, CNP verificat în timp ce se tastează | `Forms/PatientForm.cs`, `Services/Cnp.cs` |
 | `async` / `await`, `Task.Run`, `IProgress<T>`, `CancellationToken` fără să blocheze UI thread | `Forms/AgendaView.cs`, `Services/Reminders.cs` |
 | `Timer` pentru căutare cu întârziere (debounce) | `Forms/PatientsView.cs` |

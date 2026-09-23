@@ -135,6 +135,7 @@ namespace StomaDesk.Forms
             this.gridPatients.Size = new System.Drawing.Size(1164, 619);
             this.gridPatients.TabIndex = 1;
             this.gridPatients.CellDoubleClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.gridPatients_CellDoubleClick);
+            this.gridPatients.CellPainting += new System.Windows.Forms.DataGridViewCellPaintingEventHandler(this.gridPatients_CellPainting);
             this.gridPatients.SelectionChanged += new System.EventHandler(this.gridPatients_SelectionChanged);
             this.gridPatients.KeyDown += new System.Windows.Forms.KeyEventHandler(this.gridPatients_KeyDown);
             //

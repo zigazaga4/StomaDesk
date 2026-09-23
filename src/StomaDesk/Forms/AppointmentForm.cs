@@ -22,6 +22,8 @@ namespace StomaDesk.Forms
         public AppointmentForm()
         {
             InitializeComponent();
+            Theme.Primary(btnOk);
+            Theme.Apply(this);
         }
 
         public AppointmentForm(ClinicStore store, Appointment appointment, bool lockPatient)

@@ -41,24 +41,21 @@ namespace StomaDesk.Forms
             this.mnuViewSettings = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuHelp = new System.Windows.Forms.ToolStripMenuItem();
             this.mnuAbout = new System.Windows.Forms.ToolStripMenuItem();
-            this.tabMain = new System.Windows.Forms.TabControl();
-            this.tabPatients = new System.Windows.Forms.TabPage();
+            this.navMain = new StomaDesk.Controls.NavBar();
+            this.panelContent = new System.Windows.Forms.Panel();
+            this.panelPageHeader = new System.Windows.Forms.Panel();
+            this.lblPageTitle = new System.Windows.Forms.Label();
+            this.lblPageHint = new System.Windows.Forms.Label();
             this.patientsView = new StomaDesk.Forms.PatientsView();
-            this.tabAgenda = new System.Windows.Forms.TabPage();
             this.agendaView = new StomaDesk.Forms.AgendaView();
-            this.tabReports = new System.Windows.Forms.TabPage();
             this.reportsView = new StomaDesk.Forms.ReportsView();
-            this.tabSettings = new System.Windows.Forms.TabPage();
             this.settingsView = new StomaDesk.Forms.SettingsView();
             this.statusMain = new System.Windows.Forms.StatusStrip();
             this.lblStatus = new System.Windows.Forms.ToolStripStatusLabel();
             this.lblToday = new System.Windows.Forms.ToolStripStatusLabel();
             this.menuMain.SuspendLayout();
-            this.tabMain.SuspendLayout();
-            this.tabPatients.SuspendLayout();
-            this.tabAgenda.SuspendLayout();
-            this.tabReports.SuspendLayout();
-            this.tabSettings.SuspendLayout();
+            this.panelContent.SuspendLayout();
+            this.panelPageHeader.SuspendLayout();
             this.statusMain.SuspendLayout();
             this.SuspendLayout();
             //
@@ -68,9 +65,9 @@ namespace StomaDesk.Forms
             this.mnuFile,
             this.mnuView,
             this.mnuHelp});
-            this.menuMain.Location = new System.Drawing.Point(0, 0);
+            this.menuMain.Location = new System.Drawing.Point(220, 0);
             this.menuMain.Name = "menuMain";
-            this.menuMain.Size = new System.Drawing.Size(1184, 24);
+            this.menuMain.Size = new System.Drawing.Size(1120, 24);
             this.menuMain.TabIndex = 0;
             //
             // mnuFile
@@ -169,104 +166,99 @@ namespace StomaDesk.Forms
             this.mnuAbout.Text = "Despre StomaDesk";
             this.mnuAbout.Click += new System.EventHandler(this.mnuAbout_Click);
             //
-            // tabMain
+            // navMain
             //
-            this.tabMain.Controls.Add(this.tabPatients);
-            this.tabMain.Controls.Add(this.tabAgenda);
-            this.tabMain.Controls.Add(this.tabReports);
-            this.tabMain.Controls.Add(this.tabSettings);
-            this.tabMain.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tabMain.Location = new System.Drawing.Point(0, 24);
-            this.tabMain.Name = "tabMain";
-            this.tabMain.Padding = new System.Drawing.Point(14, 6);
-            this.tabMain.SelectedIndex = 0;
-            this.tabMain.Size = new System.Drawing.Size(1184, 715);
-            this.tabMain.TabIndex = 1;
+            this.navMain.Dock = System.Windows.Forms.DockStyle.Left;
+            this.navMain.Location = new System.Drawing.Point(0, 0);
+            this.navMain.Name = "navMain";
+            this.navMain.Size = new System.Drawing.Size(220, 761);
+            this.navMain.TabIndex = 0;
+            this.navMain.SelectedIndexChanged += new System.EventHandler(this.navMain_SelectedIndexChanged);
             //
-            // tabPatients
+            // panelContent
             //
-            this.tabPatients.Controls.Add(this.patientsView);
-            this.tabPatients.Location = new System.Drawing.Point(4, 30);
-            this.tabPatients.Name = "tabPatients";
-            this.tabPatients.Padding = new System.Windows.Forms.Padding(6);
-            this.tabPatients.Size = new System.Drawing.Size(1176, 681);
-            this.tabPatients.TabIndex = 0;
-            this.tabPatients.Text = "Pacienți";
-            this.tabPatients.UseVisualStyleBackColor = true;
+            this.panelContent.Controls.Add(this.patientsView);
+            this.panelContent.Controls.Add(this.agendaView);
+            this.panelContent.Controls.Add(this.reportsView);
+            this.panelContent.Controls.Add(this.settingsView);
+            this.panelContent.Controls.Add(this.panelPageHeader);
+            this.panelContent.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.panelContent.Location = new System.Drawing.Point(220, 24);
+            this.panelContent.Name = "panelContent";
+            this.panelContent.Padding = new System.Windows.Forms.Padding(22, 10, 22, 14);
+            this.panelContent.Size = new System.Drawing.Size(1120, 715);
+            this.panelContent.TabIndex = 1;
+            //
+            // panelPageHeader
+            //
+            this.panelPageHeader.Controls.Add(this.lblPageTitle);
+            this.panelPageHeader.Controls.Add(this.lblPageHint);
+            this.panelPageHeader.Dock = System.Windows.Forms.DockStyle.Top;
+            this.panelPageHeader.Location = new System.Drawing.Point(22, 10);
+            this.panelPageHeader.Name = "panelPageHeader";
+            this.panelPageHeader.Size = new System.Drawing.Size(1076, 60);
+            this.panelPageHeader.TabIndex = 0;
+            //
+            // lblPageTitle
+            //
+            this.lblPageTitle.AutoSize = true;
+            this.lblPageTitle.Font = new System.Drawing.Font("Segoe UI", 17F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblPageTitle.Location = new System.Drawing.Point(-2, 2);
+            this.lblPageTitle.Name = "lblPageTitle";
+            this.lblPageTitle.Size = new System.Drawing.Size(100, 31);
+            this.lblPageTitle.TabIndex = 0;
+            this.lblPageTitle.Text = "Pacienți";
+            //
+            // lblPageHint
+            //
+            this.lblPageHint.AutoSize = true;
+            this.lblPageHint.ForeColor = System.Drawing.Color.DimGray;
+            this.lblPageHint.Location = new System.Drawing.Point(0, 36);
+            this.lblPageHint.Name = "lblPageHint";
+            this.lblPageHint.Size = new System.Drawing.Size(100, 15);
+            this.lblPageHint.TabIndex = 1;
+            this.lblPageHint.Text = "";
             //
             // patientsView
             //
             this.patientsView.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.patientsView.Location = new System.Drawing.Point(6, 6);
+            this.patientsView.Location = new System.Drawing.Point(22, 70);
             this.patientsView.Name = "patientsView";
-            this.patientsView.Size = new System.Drawing.Size(1164, 669);
-            this.patientsView.TabIndex = 0;
-            //
-            // tabAgenda
-            //
-            this.tabAgenda.Controls.Add(this.agendaView);
-            this.tabAgenda.Location = new System.Drawing.Point(4, 30);
-            this.tabAgenda.Name = "tabAgenda";
-            this.tabAgenda.Padding = new System.Windows.Forms.Padding(6);
-            this.tabAgenda.Size = new System.Drawing.Size(1176, 681);
-            this.tabAgenda.TabIndex = 1;
-            this.tabAgenda.Text = "Agendă";
-            this.tabAgenda.UseVisualStyleBackColor = true;
+            this.patientsView.Size = new System.Drawing.Size(1076, 631);
+            this.patientsView.TabIndex = 1;
             //
             // agendaView
             //
             this.agendaView.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.agendaView.Location = new System.Drawing.Point(6, 6);
+            this.agendaView.Location = new System.Drawing.Point(22, 70);
             this.agendaView.Name = "agendaView";
-            this.agendaView.Size = new System.Drawing.Size(1164, 669);
-            this.agendaView.TabIndex = 0;
-            //
-            // tabReports
-            //
-            this.tabReports.Controls.Add(this.reportsView);
-            this.tabReports.Location = new System.Drawing.Point(4, 30);
-            this.tabReports.Name = "tabReports";
-            this.tabReports.Padding = new System.Windows.Forms.Padding(6);
-            this.tabReports.Size = new System.Drawing.Size(1176, 681);
-            this.tabReports.TabIndex = 2;
-            this.tabReports.Text = "Rapoarte";
-            this.tabReports.UseVisualStyleBackColor = true;
+            this.agendaView.Size = new System.Drawing.Size(1076, 631);
+            this.agendaView.TabIndex = 2;
             //
             // reportsView
             //
             this.reportsView.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.reportsView.Location = new System.Drawing.Point(6, 6);
+            this.reportsView.Location = new System.Drawing.Point(22, 70);
             this.reportsView.Name = "reportsView";
-            this.reportsView.Size = new System.Drawing.Size(1164, 669);
-            this.reportsView.TabIndex = 0;
-            //
-            // tabSettings
-            //
-            this.tabSettings.Controls.Add(this.settingsView);
-            this.tabSettings.Location = new System.Drawing.Point(4, 30);
-            this.tabSettings.Name = "tabSettings";
-            this.tabSettings.Padding = new System.Windows.Forms.Padding(6);
-            this.tabSettings.Size = new System.Drawing.Size(1176, 681);
-            this.tabSettings.TabIndex = 3;
-            this.tabSettings.Text = "Nomenclatoare";
-            this.tabSettings.UseVisualStyleBackColor = true;
+            this.reportsView.Size = new System.Drawing.Size(1076, 631);
+            this.reportsView.TabIndex = 3;
             //
             // settingsView
             //
             this.settingsView.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.settingsView.Location = new System.Drawing.Point(6, 6);
+            this.settingsView.Location = new System.Drawing.Point(22, 70);
             this.settingsView.Name = "settingsView";
-            this.settingsView.Size = new System.Drawing.Size(1164, 669);
-            this.settingsView.TabIndex = 0;
+            this.settingsView.Size = new System.Drawing.Size(1076, 631);
+            this.settingsView.TabIndex = 4;
             //
             // statusMain
             //
             this.statusMain.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.lblStatus,
             this.lblToday});
-            this.statusMain.Location = new System.Drawing.Point(0, 739);
+            this.statusMain.Location = new System.Drawing.Point(220, 739);
             this.statusMain.Name = "statusMain";
-            this.statusMain.Size = new System.Drawing.Size(1184, 22);
+            this.statusMain.Size = new System.Drawing.Size(1120, 22);
             this.statusMain.TabIndex = 2;
             //
             // lblStatus
@@ -287,23 +279,22 @@ namespace StomaDesk.Forms
             //
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1184, 761);
-            this.Controls.Add(this.tabMain);
-            this.Controls.Add(this.statusMain);
+            this.ClientSize = new System.Drawing.Size(1340, 761);
+            this.Controls.Add(this.panelContent);
             this.Controls.Add(this.menuMain);
+            this.Controls.Add(this.statusMain);
+            this.Controls.Add(this.navMain);
             this.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.MainMenuStrip = this.menuMain;
-            this.MinimumSize = new System.Drawing.Size(980, 620);
+            this.MinimumSize = new System.Drawing.Size(1180, 620);
             this.Name = "MainForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "StomaDesk";
             this.menuMain.ResumeLayout(false);
             this.menuMain.PerformLayout();
-            this.tabMain.ResumeLayout(false);
-            this.tabPatients.ResumeLayout(false);
-            this.tabAgenda.ResumeLayout(false);
-            this.tabReports.ResumeLayout(false);
-            this.tabSettings.ResumeLayout(false);
+            this.panelContent.ResumeLayout(false);
+            this.panelPageHeader.ResumeLayout(false);
+            this.panelPageHeader.PerformLayout();
             this.statusMain.ResumeLayout(false);
             this.statusMain.PerformLayout();
             this.ResumeLayout(false);
@@ -326,14 +317,14 @@ namespace StomaDesk.Forms
         private System.Windows.Forms.ToolStripMenuItem mnuViewSettings;
         private System.Windows.Forms.ToolStripMenuItem mnuHelp;
         private System.Windows.Forms.ToolStripMenuItem mnuAbout;
-        private System.Windows.Forms.TabControl tabMain;
-        private System.Windows.Forms.TabPage tabPatients;
+        private StomaDesk.Controls.NavBar navMain;
+        private System.Windows.Forms.Panel panelContent;
+        private System.Windows.Forms.Panel panelPageHeader;
+        private System.Windows.Forms.Label lblPageTitle;
+        private System.Windows.Forms.Label lblPageHint;
         private StomaDesk.Forms.PatientsView patientsView;
-        private System.Windows.Forms.TabPage tabAgenda;
         private StomaDesk.Forms.AgendaView agendaView;
-        private System.Windows.Forms.TabPage tabReports;
         private StomaDesk.Forms.ReportsView reportsView;
-        private System.Windows.Forms.TabPage tabSettings;
         private StomaDesk.Forms.SettingsView settingsView;
         private System.Windows.Forms.StatusStrip statusMain;
         private System.Windows.Forms.ToolStripStatusLabel lblStatus;

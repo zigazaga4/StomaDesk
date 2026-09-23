@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Drawing.Text;
 using System.Linq;
 using System.Threading;
 using System.Windows.Forms;
@@ -21,7 +23,8 @@ namespace StomaDesk.Forms
         private const int SlotMinutes = 30;
 
         private readonly ContextMenuStrip _menu = new ContextMenuStrip();
-        private readonly Font _boldFont;
+        private readonly System.Windows.Forms.Timer _clock = new System.Windows.Forms.Timer { Interval = 60000 };
+        private Dictionary<int, int> _countByDoctor = new Dictionary<int, int>();
         private Appointment _menuAppointment;
         private string _layoutKey;
         private CancellationTokenSource _reminderCancel;
@@ -29,14 +32,18 @@ namespace StomaDesk.Forms
         public AgendaView()
         {
             InitializeComponent();
-            _boldFont = new Font(Font, FontStyle.Bold);
             Grid.SetupList(gridDay);
             gridDay.SelectionMode = DataGridViewSelectionMode.CellSelect;
-            gridDay.AlternatingRowsDefaultCellStyle.BackColor = Color.Empty;
-            gridDay.CellBorderStyle = DataGridViewCellBorderStyle.Single;
+            gridDay.CellBorderStyle = DataGridViewCellBorderStyle.None;   // every cell is drawn in gridDay_CellPainting
+            gridDay.ColumnHeadersHeight = 42;
             gridDay.RowTemplate.Height = 30;
             gridDay.ShowCellToolTips = true;
             BuildMenu();
+            Theme.Primary(btnNew);
+
+            // Moves the red "now" line once a minute.
+            _clock.Tick += (s, e) => gridDay.Invalidate();
+            _clock.Start();
         }
 
         protected override void OnBound()
@@ -54,11 +61,13 @@ namespace StomaDesk.Forms
 
             IList<Doctor> doctors = Store.ActiveDoctors;
             EnsureLayout(doctors);
-            ClearCells(day);
+            ClearCells();
 
             List<Appointment> appointments = Store.AppointmentsOn(day).Where(a => a.IsActive).ToList();
             foreach (Appointment appointment in appointments)
                 Place(appointment, doctors);
+            _countByDoctor = appointments.GroupBy(a => a.DoctorId).ToDictionary(g => g.Key, g => g.Count());
+            gridDay.Invalidate();
 
             if (_reminderCancel == null)
                 lblSummary.Text = Summary(appointments);
@@ -90,14 +99,11 @@ namespace StomaDesk.Forms
 
             DataGridViewTextBoxColumn hour = Grid.AddColumn(gridDay, "Ora", 64);
             hour.Frozen = true;
-            hour.DefaultCellStyle.ForeColor = Color.DimGray;
-            hour.DefaultCellStyle.BackColor = Color.FromArgb(244, 246, 249);
 
             foreach (Doctor doctor in doctors)
             {
                 DataGridViewTextBoxColumn column = Grid.AddColumn(gridDay, doctor.Name, 200, fill: true);
                 column.Tag = doctor;
-                column.HeaderCell.Style.BackColor = GdiKit.Tint(Color.FromArgb(doctor.ColorArgb), 0.55f);
             }
 
             for (int minutes = FirstHour * 60; minutes < LastHour * 60; minutes += SlotMinutes)
@@ -110,25 +116,16 @@ namespace StomaDesk.Forms
             }
         }
 
-        private void ClearCells(DateTime day)
+        /// <summary>The cells hold no text: each slot keeps its appointment in Tag and gridDay_CellPainting draws it.</summary>
+        private void ClearCells()
         {
-            bool closed = day.DayOfWeek == DayOfWeek.Sunday;
             foreach (DataGridViewRow row in gridDay.Rows)
             {
-                var time = (TimeSpan)row.Tag;
-                Color background = closed ? Color.FromArgb(242, 242, 242)
-                    : time.Minutes == 0 ? Color.White
-                    : Color.FromArgb(250, 251, 253);
-
                 for (int c = 1; c < row.Cells.Count; c++)
                 {
                     DataGridViewCell cell = row.Cells[c];
-                    cell.Value = null;
                     cell.Tag = null;
                     cell.ToolTipText = "";
-                    cell.Style.BackColor = background;
-                    cell.Style.Font = null;
-                    cell.Style.ForeColor = Color.Empty;
                 }
             }
         }
@@ -139,15 +136,10 @@ namespace StomaDesk.Forms
             if (column <= 0)
                 return;
 
-            Doctor doctor = doctors[column - 1];
-            Patient patient = Store.GetPatient(appointment.PatientId);
-            string name = patient == null ? "(pacient șters)" : patient.FullName;
-            string status = appointment.Status == AppointmentStatus.Scheduled ? "" : "   [" + Labels.For(appointment.Status) + "]";
-
             int first = (int)((appointment.Start.TimeOfDay.TotalMinutes - FirstHour * 60) / SlotMinutes);
             int slots = Math.Max(1, (int)Math.Ceiling(appointment.DurationMinutes / (double)SlotMinutes));
             string tooltip = string.Format("{0}\nora {1}, {2} min\n{3}\nStatus: {4}{5}",
-                name, Fmt.Time(appointment.Start), appointment.DurationMinutes, appointment.Reason,
+                PatientName(appointment), Fmt.Time(appointment.Start), appointment.DurationMinutes, appointment.Reason,
                 Labels.For(appointment.Status), appointment.ReminderSent ? "\nSMS de reamintire trimis" : "");
 
             for (int i = 0; i < slots; i++)
@@ -159,19 +151,13 @@ namespace StomaDesk.Forms
                 DataGridViewCell cell = gridDay.Rows[rowIndex].Cells[column];
                 cell.Tag = appointment;
                 cell.ToolTipText = tooltip;
-                cell.Style.BackColor = ColorFor(appointment, doctor);
-
-                if (i == 0)
-                {
-                    cell.Value = Fmt.Time(appointment.Start) + "  " + name + (slots == 1 ? "   " + appointment.Reason : "") + status;
-                    cell.Style.Font = _boldFont;
-                }
-                else if (i == 1)
-                {
-                    cell.Value = "      " + appointment.Reason;
-                    cell.Style.ForeColor = Color.FromArgb(70, 70, 70);
-                }
             }
+        }
+
+        private string PatientName(Appointment appointment)
+        {
+            Patient patient = Store.GetPatient(appointment.PatientId);
+            return patient == null ? "(pacient șters)" : patient.FullName;
         }
 
         private static int IndexOfDoctor(IList<Doctor> doctors, int doctorId)
@@ -184,16 +170,205 @@ namespace StomaDesk.Forms
             return -1;
         }
 
-        private static Color ColorFor(Appointment appointment, Doctor doctor)
+        // ---------------------------------------------------------------- painting
+
+        private void gridDay_CellPainting(object sender, DataGridViewCellPaintingEventArgs e)
         {
-            Color color = Color.FromArgb(doctor.ColorArgb);
-            switch (appointment.Status)
+            if (e.ColumnIndex < 0)
+                return;
+
+            Graphics g = e.Graphics;
+            g.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
+            if (e.RowIndex < 0)
+                PaintHeader(g, e.CellBounds, e.ColumnIndex);
+            else if (e.ColumnIndex == 0)
+                PaintHour(g, e.CellBounds, e.RowIndex);
+            else
+                PaintSlot(g, e.CellBounds, e.RowIndex, e.ColumnIndex, (e.State & DataGridViewElementStates.Selected) != 0);
+            e.Handled = true;
+        }
+
+        /// <summary>Doctor columns: a colour dot, the name, the day's count and a stripe in the doctor's colour.</summary>
+        private void PaintHeader(Graphics g, Rectangle b, int column)
+        {
+            using (var back = new SolidBrush(Theme.Surface))
+                g.FillRectangle(back, b);
+            using (var line = new Pen(Theme.Line))
             {
-                case AppointmentStatus.Done: return Color.FromArgb(226, 229, 233);
-                case AppointmentStatus.NoShow: return Color.FromArgb(247, 214, 210);
-                case AppointmentStatus.Arrived: return GdiKit.Tint(color, 0.35f);
-                case AppointmentStatus.Confirmed: return GdiKit.Tint(color, 0.55f);
-                default: return GdiKit.Tint(color, 0.75f);
+                g.DrawLine(line, b.Left, b.Bottom - 1, b.Right, b.Bottom - 1);
+                g.DrawLine(line, b.Right - 1, b.Top, b.Right - 1, b.Bottom);
+            }
+
+            var doctor = gridDay.Columns[column].Tag as Doctor;
+            if (doctor == null)
+            {
+                GdiKit.DrawText(g, "ORA", Theme.UiFont(7.75f, FontStyle.Bold), Theme.Muted, new RectangleF(b.X, b.Y, b.Width - 10f, b.Height), StringAlignment.Far);
+                return;
+            }
+
+            Color color = Color.FromArgb(doctor.ColorArgb);
+            using (var stripe = new SolidBrush(color))
+            {
+                g.FillRectangle(stripe, b.X, b.Bottom - 3, b.Width - 1, 3);
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                g.FillEllipse(stripe, b.X + 12f, b.Y + (b.Height - 10f) / 2f - 1f, 10f, 10f);
+            }
+
+            int count;
+            _countByDoctor.TryGetValue(doctor.Id, out count);
+            string info = count == 0 ? "liber" : count == 1 ? "1 programare" : count + " programări";
+            Font small = Theme.UiFont(8f);
+            float infoWidth = g.MeasureString(info, small).Width + 4f;
+            GdiKit.DrawText(g, doctor.Name, Theme.UiFont(9.5f, FontStyle.Bold), Theme.Ink, new RectangleF(b.X + 28f, b.Y, b.Width - 40f - infoWidth, b.Height - 2f));
+            GdiKit.DrawText(g, info, small, Theme.Muted, new RectangleF(b.Right - infoWidth - 10f, b.Y, infoWidth, b.Height - 2f), StringAlignment.Far);
+        }
+
+        private void PaintHour(Graphics g, Rectangle b, int row)
+        {
+            var time = (TimeSpan)gridDay.Rows[row].Tag;
+            using (var back = new SolidBrush(Theme.Surface))
+                g.FillRectangle(back, b);
+            using (var line = new Pen(Theme.Line))
+                g.DrawLine(line, b.Right - 1, b.Top, b.Right - 1, b.Bottom);
+
+            bool fullHour = time.Minutes == 0;
+            GdiKit.DrawText(g, time.ToString(@"hh\:mm"), Theme.UiFont(fullHour ? 9f : 8.25f, fullHour ? FontStyle.Bold : FontStyle.Regular),
+                fullHour ? Theme.Ink : Theme.Muted, new RectangleF(b.X, b.Y, b.Width - 12f, b.Height), StringAlignment.Far);
+            PaintNowLine(g, b, time, true);
+        }
+
+        private void PaintSlot(Graphics g, Rectangle b, int row, int column, bool selected)
+        {
+            DateTime day = dtpDay.Value.Date;
+            var time = (TimeSpan)gridDay.Rows[row].Tag;
+            Color back = day.DayOfWeek == DayOfWeek.Sunday ? Color.FromArgb(240, 242, 243)
+                : time.Minutes == 0 ? Theme.Surface
+                : Theme.SurfaceAlt;
+            using (var brush = new SolidBrush(back))
+                g.FillRectangle(brush, b);
+            // A stronger line where a new hour starts, a faint one at the half hour.
+            using (var slotLine = new Pen(time.Minutes == 30 ? Theme.Line : Color.FromArgb(238, 242, 244)))
+                g.DrawLine(slotLine, b.Left, b.Bottom - 1, b.Right, b.Bottom - 1);
+            using (var columnLine = new Pen(Theme.Line))
+                g.DrawLine(columnLine, b.Right - 1, b.Top, b.Right - 1, b.Bottom);
+
+            var appointment = gridDay.Rows[row].Cells[column].Tag as Appointment;
+            if (appointment != null)
+            {
+                PaintAppointment(g, b, row, column, appointment);
+            }
+            else if (selected)
+            {
+                // The free slot "Programare nouă" would use.
+                var hint = new RectangleF(b.X + 4f, b.Y + 2f, b.Width - 9f, b.Height - 5f);
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                using (GraphicsPath path = GdiKit.RoundedRect(hint, 5f))
+                using (var fill = new SolidBrush(Theme.BrandLight))
+                using (var border = new Pen(GdiKit.Tint(Theme.Brand, 0.45f)))
+                {
+                    g.FillPath(fill, path);
+                    g.DrawPath(border, path);
+                }
+                GdiKit.DrawText(g, "+ " + time.ToString(@"hh\:mm") + "   programare nouă", Theme.UiFont(8.25f, FontStyle.Bold), Theme.Brand,
+                    new RectangleF(hint.X + 10f, hint.Y, hint.Width - 14f, hint.Height));
+            }
+            PaintNowLine(g, b, time, false);
+        }
+
+        /// <summary>
+        /// One slot of an appointment card. A booking over several slots is drawn slot by slot: the first rounds the
+        /// top corners and carries the time, name and status, the second the reason, the last rounds the bottom.
+        /// </summary>
+        private void PaintAppointment(Graphics g, Rectangle b, int row, int column, Appointment appointment)
+        {
+            int offset = 0;
+            while (row - offset - 1 >= 0 && ReferenceEquals(gridDay.Rows[row - offset - 1].Cells[column].Tag, appointment))
+                offset++;
+            bool first = offset == 0;
+            bool last = row + 1 >= gridDay.Rows.Count || !ReferenceEquals(gridDay.Rows[row + 1].Cells[column].Tag, appointment);
+
+            Color color = Color.FromArgb(((Doctor)gridDay.Columns[column].Tag).ColorArgb);
+            bool closed = appointment.Status == AppointmentStatus.Done || appointment.Status == AppointmentStatus.NoShow;
+            Color fill = closed ? Color.FromArgb(242, 244, 245) : GdiKit.Tint(color, 0.78f);
+            Color bar = closed ? Theme.LineStrong : color;
+            Color ink = closed ? Theme.Muted : Theme.Ink;
+
+            var card = new RectangleF(b.X + 4f, b.Y + (first ? 3f : 0f), b.Width - 9f, b.Height - (first ? 3f : 0f) - (last ? 4f : 0f));
+            GraphicsState state = g.Save();
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            using (GraphicsPath path = GdiKit.RoundedRect(card, 6f, first, last))
+            using (var cardBrush = new SolidBrush(fill))
+            using (var barBrush = new SolidBrush(bar))
+            {
+                g.FillPath(cardBrush, path);
+                g.SetClip(path, CombineMode.Intersect);
+                g.FillRectangle(barBrush, card.X, card.Y, 4f, card.Height);
+            }
+            g.Restore(state);
+
+            float x = card.X + 12f;
+            float width = card.Width - 16f;
+            if (first)
+            {
+                string time = Fmt.Time(appointment.Start);
+                Font timeFont = Theme.UiFont(8.25f, FontStyle.Bold);
+                float timeWidth = g.MeasureString(time, timeFont).Width;
+                GdiKit.DrawText(g, time, timeFont, closed ? Theme.Muted : GdiKit.Shade(color, 0.45f), new RectangleF(x, card.Y, timeWidth, card.Height));
+
+                float pillWidth = 0f;
+                if (appointment.Status != AppointmentStatus.Scheduled && card.Width > 200f)
+                {
+                    string status = Labels.For(appointment.Status);
+                    Font pillFont = Theme.UiFont(7.5f, FontStyle.Bold);
+                    SizeF pill = GdiKit.PillSize(g, status, pillFont);
+                    pillWidth = pill.Width + 8f;
+                    GdiKit.DrawPill(g, status, pillFont, Theme.Tone(appointment.Status),
+                        new RectangleF(card.Right - pill.Width - 6f, card.Y + (card.Height - pill.Height) / 2f, pill.Width, pill.Height));
+                }
+
+                string name = PatientName(appointment);
+                Font nameFont = Theme.UiFont(9f, FontStyle.Bold);
+                var nameBox = new RectangleF(x + timeWidth + 5f, card.Y, width - timeWidth - 5f - pillWidth, card.Height);
+                GdiKit.DrawText(g, name, nameFont, ink, nameBox);
+
+                // A single-slot booking has no second line, so its reason follows the name.
+                if (last && !string.IsNullOrEmpty(appointment.Reason))
+                {
+                    float nameWidth = g.MeasureString(name, nameFont).Width + 6f;
+                    GdiKit.DrawText(g, appointment.Reason, Theme.UiFont(8.25f), Theme.Muted,
+                        new RectangleF(nameBox.X + nameWidth, card.Y, nameBox.Width - nameWidth, card.Height));
+                }
+            }
+            else if (offset == 1)
+            {
+                string detail = string.IsNullOrEmpty(appointment.Reason) ? appointment.DurationMinutes + " min" : appointment.Reason;
+                GdiKit.DrawText(g, detail, Theme.UiFont(8.5f), closed ? Theme.Muted : GdiKit.Shade(color, 0.55f), new RectangleF(x, card.Y, width, card.Height - (last ? 1f : 0f)));
+            }
+            else if (offset == 2 && appointment.ReminderSent)
+            {
+                GdiKit.DrawText(g, "SMS de reamintire trimis", Theme.UiFont(8f), Theme.Muted, new RectangleF(x, card.Y, width, card.Height));
+            }
+        }
+
+        /// <summary>Red line at the current time, on today's page only.</summary>
+        private void PaintNowLine(Graphics g, Rectangle b, TimeSpan slot, bool hourColumn)
+        {
+            DateTime now = DateTime.Now;
+            if (dtpDay.Value.Date != now.Date)
+                return;
+
+            double minutes = (now.TimeOfDay - slot).TotalMinutes;
+            if (minutes < 0 || minutes >= SlotMinutes)
+                return;
+
+            float y = b.Y + (float)(minutes / SlotMinutes) * b.Height;
+            using (var pen = new Pen(Theme.Danger, 2f))
+                g.DrawLine(pen, b.Left, y, b.Right, y);
+            if (hourColumn)
+            {
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                using (var dot = new SolidBrush(Theme.Danger))
+                    g.FillEllipse(dot, b.Right - 10f, y - 4f, 8f, 8f);
             }
         }
 
@@ -399,6 +574,7 @@ namespace StomaDesk.Forms
         {
             if (_reminderCancel != null)
                 _reminderCancel.Cancel();
+            _clock.Stop();
             base.OnHandleDestroyed(e);
         }
     }

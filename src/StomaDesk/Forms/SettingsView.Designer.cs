@@ -28,15 +28,15 @@ namespace StomaDesk.Forms
         /// </summary>
         private void InitializeComponent()
         {
-            this.groupDoctors = new System.Windows.Forms.GroupBox();
+            this.groupDoctors = new StomaDesk.Controls.Card();
             this.gridDoctors = new System.Windows.Forms.DataGridView();
             this.panelDoctorTools = new System.Windows.Forms.Panel();
             this.btnDoctorColor = new System.Windows.Forms.Button();
             this.lblDoctorHint = new System.Windows.Forms.Label();
-            this.groupProcedures = new System.Windows.Forms.GroupBox();
+            this.groupProcedures = new StomaDesk.Controls.Card();
             this.gridProcedures = new System.Windows.Forms.DataGridView();
             this.lblProcedureHint = new System.Windows.Forms.Label();
-            this.groupClinic = new System.Windows.Forms.GroupBox();
+            this.groupClinic = new StomaDesk.Controls.Card();
             this.lblClinicName = new System.Windows.Forms.Label();
             this.txtClinicName = new System.Windows.Forms.TextBox();
             this.lblClinicAddress = new System.Windows.Forms.Label();
@@ -61,9 +61,10 @@ namespace StomaDesk.Forms
             this.groupDoctors.Controls.Add(this.gridDoctors);
             this.groupDoctors.Controls.Add(this.panelDoctorTools);
             this.groupDoctors.Dock = System.Windows.Forms.DockStyle.Left;
+            this.groupDoctors.Gap = new System.Windows.Forms.Padding(0, 0, 12, 12);
             this.groupDoctors.Location = new System.Drawing.Point(0, 0);
             this.groupDoctors.Name = "groupDoctors";
-            this.groupDoctors.Padding = new System.Windows.Forms.Padding(8);
+            this.groupDoctors.Padding = new System.Windows.Forms.Padding(12, 0, 12, 10);
             this.groupDoctors.Size = new System.Drawing.Size(470, 529);
             this.groupDoctors.TabIndex = 0;
             this.groupDoctors.TabStop = false;
@@ -105,9 +106,9 @@ namespace StomaDesk.Forms
             // lblDoctorHint
             //
             this.lblDoctorHint.ForeColor = System.Drawing.Color.DimGray;
-            this.lblDoctorHint.Location = new System.Drawing.Point(148, 4);
+            this.lblDoctorHint.Location = new System.Drawing.Point(150, 6);
             this.lblDoctorHint.Name = "lblDoctorHint";
-            this.lblDoctorHint.Size = new System.Drawing.Size(300, 40);
+            this.lblDoctorHint.Size = new System.Drawing.Size(270, 48);
             this.lblDoctorHint.TabIndex = 1;
             this.lblDoctorHint.Text = "Un medic plecat se debifează la „Activ”: dispare din agendă, istoricul rămâne.";
             //
@@ -116,9 +117,10 @@ namespace StomaDesk.Forms
             this.groupProcedures.Controls.Add(this.gridProcedures);
             this.groupProcedures.Controls.Add(this.lblProcedureHint);
             this.groupProcedures.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.groupProcedures.Gap = new System.Windows.Forms.Padding(0, 0, 0, 12);
             this.groupProcedures.Location = new System.Drawing.Point(470, 0);
             this.groupProcedures.Name = "groupProcedures";
-            this.groupProcedures.Padding = new System.Windows.Forms.Padding(8);
+            this.groupProcedures.Padding = new System.Windows.Forms.Padding(12, 0, 12, 6);
             this.groupProcedures.Size = new System.Drawing.Size(694, 529);
             this.groupProcedures.TabIndex = 1;
             this.groupProcedures.TabStop = false;
@@ -160,9 +162,9 @@ namespace StomaDesk.Forms
             this.groupClinic.Controls.Add(this.btnSave);
             this.groupClinic.Controls.Add(this.btnRevert);
             this.groupClinic.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.groupClinic.Location = new System.Drawing.Point(0, 529);
+            this.groupClinic.Location = new System.Drawing.Point(0, 519);
             this.groupClinic.Name = "groupClinic";
-            this.groupClinic.Size = new System.Drawing.Size(1164, 140);
+            this.groupClinic.Size = new System.Drawing.Size(1164, 150);
             this.groupClinic.TabIndex = 2;
             this.groupClinic.TabStop = false;
             this.groupClinic.Text = "Date clinică (apar pe deviz și în SMS)";
@@ -170,7 +172,7 @@ namespace StomaDesk.Forms
             // lblClinicName
             //
             this.lblClinicName.AutoSize = true;
-            this.lblClinicName.Location = new System.Drawing.Point(14, 31);
+            this.lblClinicName.Location = new System.Drawing.Point(16, 41);
             this.lblClinicName.Name = "lblClinicName";
             this.lblClinicName.Size = new System.Drawing.Size(43, 15);
             this.lblClinicName.TabIndex = 0;
@@ -178,7 +180,7 @@ namespace StomaDesk.Forms
             //
             // txtClinicName
             //
-            this.txtClinicName.Location = new System.Drawing.Point(100, 28);
+            this.txtClinicName.Location = new System.Drawing.Point(100, 38);
             this.txtClinicName.Name = "txtClinicName";
             this.txtClinicName.Size = new System.Drawing.Size(360, 23);
             this.txtClinicName.TabIndex = 1;
@@ -187,7 +189,7 @@ namespace StomaDesk.Forms
             // lblClinicAddress
             //
             this.lblClinicAddress.AutoSize = true;
-            this.lblClinicAddress.Location = new System.Drawing.Point(14, 64);
+            this.lblClinicAddress.Location = new System.Drawing.Point(16, 74);
             this.lblClinicAddress.Name = "lblClinicAddress";
             this.lblClinicAddress.Size = new System.Drawing.Size(46, 15);
             this.lblClinicAddress.TabIndex = 2;
@@ -195,7 +197,7 @@ namespace StomaDesk.Forms
             //
             // txtClinicAddress
             //
-            this.txtClinicAddress.Location = new System.Drawing.Point(100, 61);
+            this.txtClinicAddress.Location = new System.Drawing.Point(100, 71);
             this.txtClinicAddress.Name = "txtClinicAddress";
             this.txtClinicAddress.Size = new System.Drawing.Size(360, 23);
             this.txtClinicAddress.TabIndex = 3;
@@ -204,7 +206,7 @@ namespace StomaDesk.Forms
             // lblClinicPhone
             //
             this.lblClinicPhone.AutoSize = true;
-            this.lblClinicPhone.Location = new System.Drawing.Point(490, 31);
+            this.lblClinicPhone.Location = new System.Drawing.Point(490, 41);
             this.lblClinicPhone.Name = "lblClinicPhone";
             this.lblClinicPhone.Size = new System.Drawing.Size(48, 15);
             this.lblClinicPhone.TabIndex = 4;
@@ -212,7 +214,7 @@ namespace StomaDesk.Forms
             //
             // txtClinicPhone
             //
-            this.txtClinicPhone.Location = new System.Drawing.Point(560, 28);
+            this.txtClinicPhone.Location = new System.Drawing.Point(560, 38);
             this.txtClinicPhone.Name = "txtClinicPhone";
             this.txtClinicPhone.Size = new System.Drawing.Size(180, 23);
             this.txtClinicPhone.TabIndex = 5;
@@ -221,7 +223,7 @@ namespace StomaDesk.Forms
             // lblClinicFiscal
             //
             this.lblClinicFiscal.AutoSize = true;
-            this.lblClinicFiscal.Location = new System.Drawing.Point(490, 64);
+            this.lblClinicFiscal.Location = new System.Drawing.Point(490, 74);
             this.lblClinicFiscal.Name = "lblClinicFiscal";
             this.lblClinicFiscal.Size = new System.Drawing.Size(31, 15);
             this.lblClinicFiscal.TabIndex = 6;
@@ -229,7 +231,7 @@ namespace StomaDesk.Forms
             //
             // txtClinicFiscal
             //
-            this.txtClinicFiscal.Location = new System.Drawing.Point(560, 61);
+            this.txtClinicFiscal.Location = new System.Drawing.Point(560, 71);
             this.txtClinicFiscal.Name = "txtClinicFiscal";
             this.txtClinicFiscal.Size = new System.Drawing.Size(180, 23);
             this.txtClinicFiscal.TabIndex = 7;
@@ -239,7 +241,7 @@ namespace StomaDesk.Forms
             //
             this.lblDataFile.AutoSize = true;
             this.lblDataFile.ForeColor = System.Drawing.Color.DimGray;
-            this.lblDataFile.Location = new System.Drawing.Point(14, 104);
+            this.lblDataFile.Location = new System.Drawing.Point(16, 114);
             this.lblDataFile.Name = "lblDataFile";
             this.lblDataFile.Size = new System.Drawing.Size(90, 15);
             this.lblDataFile.TabIndex = 8;
@@ -248,7 +250,7 @@ namespace StomaDesk.Forms
             // btnSave
             //
             this.btnSave.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnSave.Location = new System.Drawing.Point(846, 26);
+            this.btnSave.Location = new System.Drawing.Point(832, 36);
             this.btnSave.Name = "btnSave";
             this.btnSave.Size = new System.Drawing.Size(170, 32);
             this.btnSave.TabIndex = 9;
@@ -259,7 +261,7 @@ namespace StomaDesk.Forms
             // btnRevert
             //
             this.btnRevert.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnRevert.Location = new System.Drawing.Point(1022, 26);
+            this.btnRevert.Location = new System.Drawing.Point(1010, 36);
             this.btnRevert.Name = "btnRevert";
             this.btnRevert.Size = new System.Drawing.Size(130, 32);
             this.btnRevert.TabIndex = 10;
@@ -288,15 +290,15 @@ namespace StomaDesk.Forms
 
         #endregion
 
-        private System.Windows.Forms.GroupBox groupDoctors;
+        private StomaDesk.Controls.Card groupDoctors;
         private System.Windows.Forms.DataGridView gridDoctors;
         private System.Windows.Forms.Panel panelDoctorTools;
         private System.Windows.Forms.Button btnDoctorColor;
         private System.Windows.Forms.Label lblDoctorHint;
-        private System.Windows.Forms.GroupBox groupProcedures;
+        private StomaDesk.Controls.Card groupProcedures;
         private System.Windows.Forms.DataGridView gridProcedures;
         private System.Windows.Forms.Label lblProcedureHint;
-        private System.Windows.Forms.GroupBox groupClinic;
+        private StomaDesk.Controls.Card groupClinic;
         private System.Windows.Forms.Label lblClinicName;
         private System.Windows.Forms.TextBox txtClinicName;
         private System.Windows.Forms.Label lblClinicAddress;

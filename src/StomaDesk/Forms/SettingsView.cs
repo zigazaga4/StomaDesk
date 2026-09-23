@@ -27,7 +27,7 @@ namespace StomaDesk.Forms
 
             Grid.SetupEditable(gridDoctors);
             Grid.AddColumn(gridDoctors, "Nume", 190, fill: true, dataProperty: "Name");
-            Grid.AddColumn(gridDoctors, "Specialitate", 170, dataProperty: "Specialty");
+            Grid.AddColumn(gridDoctors, "Specialitate", 150, dataProperty: "Specialty");
             Grid.AddCheckColumn(gridDoctors, "Activ", 50, "Active");
 
             Grid.SetupEditable(gridProcedures);
@@ -38,6 +38,8 @@ namespace StomaDesk.Forms
             price.DefaultCellStyle.FormatProvider = Fmt.RoNumbers;   // 1.250,50 shown and typed, whatever the Windows region
             Grid.AddColumn(gridProcedures, "Durată (min)", 90, alignRight: true, dataProperty: "DurationMinutes");
             Grid.AddCheckColumn(gridProcedures, "Pe dinte", 70, "PerTooth");
+
+            Theme.Primary(btnSave);
         }
 
         public override void RefreshView()

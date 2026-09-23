@@ -15,6 +15,7 @@ namespace StomaDesk.Forms
         {
             InitializeComponent();
             Grid.SetupList(gridReport);
+            Theme.Primary(btnRun);
         }
 
         protected override void OnBound()

@@ -171,6 +171,7 @@ namespace StomaDesk.Forms
             this.gridDay.TabIndex = 1;
             this.gridDay.CellDoubleClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.gridDay_CellDoubleClick);
             this.gridDay.CellMouseDown += new System.Windows.Forms.DataGridViewCellMouseEventHandler(this.gridDay_CellMouseDown);
+            this.gridDay.CellPainting += new System.Windows.Forms.DataGridViewCellPaintingEventHandler(this.gridDay_CellPainting);
             //
             // AgendaView
             //

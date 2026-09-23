@@ -6,6 +6,7 @@ using System.Windows.Forms;
 using StomaDesk.Data;
 using StomaDesk.Diagnostics;
 using StomaDesk.Forms;
+using StomaDesk.Ui;
 
 namespace StomaDesk
 {
@@ -29,6 +30,7 @@ namespace StomaDesk
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+            ToolStripManager.Renderer = Theme.MenuRenderer;   // menus, context menus and the status bar
             Application.ThreadException += OnThreadException;
             AppDomain.CurrentDomain.UnhandledException += OnUnhandledException;
 
@@ -52,7 +54,7 @@ namespace StomaDesk
                 return 1;
             }
 
-            Application.Run(new MainForm(store));
+            Application.Run(new MainForm(store) { WindowState = FormWindowState.Maximized });
             return 0;
         }
 

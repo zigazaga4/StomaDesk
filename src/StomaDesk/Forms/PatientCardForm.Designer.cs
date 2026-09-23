@@ -31,11 +31,13 @@ namespace StomaDesk.Forms
             this.panelHeader = new System.Windows.Forms.Panel();
             this.lblName = new System.Windows.Forms.Label();
             this.lblDetails = new System.Windows.Forms.Label();
-            this.lblAllergies = new System.Windows.Forms.Label();
-            this.lblBalance = new System.Windows.Forms.Label();
+            this.lblAllergies = new StomaDesk.Controls.Badge();
+            this.lblBalance = new StomaDesk.Controls.Badge();
             this.btnEditPatient = new System.Windows.Forms.Button();
-            this.tabCard = new System.Windows.Forms.TabControl();
-            this.tabOdontogram = new System.Windows.Forms.TabPage();
+            this.avatarPatient = new StomaDesk.Controls.Avatar();
+            this.navCard = new StomaDesk.Controls.NavBar();
+            this.panelPages = new System.Windows.Forms.Panel();
+            this.pageOdontogram = new System.Windows.Forms.Panel();
             this.odontogram = new StomaDesk.Controls.OdontogramControl();
             this.panelTooth = new System.Windows.Forms.Panel();
             this.lblTooth = new System.Windows.Forms.Label();
@@ -45,7 +47,7 @@ namespace StomaDesk.Forms
             this.btnApplyTooth = new System.Windows.Forms.Button();
             this.btnPlanTooth = new System.Windows.Forms.Button();
             this.lblToothHint = new System.Windows.Forms.Label();
-            this.tabPlan = new System.Windows.Forms.TabPage();
+            this.pagePlan = new System.Windows.Forms.Panel();
             this.gridPlan = new System.Windows.Forms.DataGridView();
             this.panelPlanAdd = new System.Windows.Forms.Panel();
             this.lblProcedure = new System.Windows.Forms.Label();
@@ -65,12 +67,12 @@ namespace StomaDesk.Forms
             this.btnPrintEstimate = new System.Windows.Forms.Button();
             this.btnSaveEstimate = new System.Windows.Forms.Button();
             this.lblPlanTotals = new System.Windows.Forms.Label();
-            this.tabAppointments = new System.Windows.Forms.TabPage();
+            this.pageAppointments = new System.Windows.Forms.Panel();
             this.gridAppointments = new System.Windows.Forms.DataGridView();
             this.panelAppointmentActions = new System.Windows.Forms.Panel();
             this.btnNewAppointment = new System.Windows.Forms.Button();
             this.btnEditAppointment = new System.Windows.Forms.Button();
-            this.tabPayments = new System.Windows.Forms.TabPage();
+            this.pagePayments = new System.Windows.Forms.Panel();
             this.gridPayments = new System.Windows.Forms.DataGridView();
             this.panelPaymentAdd = new System.Windows.Forms.Panel();
             this.lblAmount = new System.Windows.Forms.Label();
@@ -82,18 +84,18 @@ namespace StomaDesk.Forms
             this.btnAddPayment = new System.Windows.Forms.Button();
             this.lblPaymentTotals = new System.Windows.Forms.Label();
             this.panelHeader.SuspendLayout();
-            this.tabCard.SuspendLayout();
-            this.tabOdontogram.SuspendLayout();
+            this.panelPages.SuspendLayout();
+            this.pageOdontogram.SuspendLayout();
             this.panelTooth.SuspendLayout();
-            this.tabPlan.SuspendLayout();
+            this.pagePlan.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.gridPlan)).BeginInit();
             this.panelPlanAdd.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numDiscount)).BeginInit();
             this.panelPlanActions.SuspendLayout();
-            this.tabAppointments.SuspendLayout();
+            this.pageAppointments.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.gridAppointments)).BeginInit();
             this.panelAppointmentActions.SuspendLayout();
-            this.tabPayments.SuspendLayout();
+            this.pagePayments.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.gridPayments)).BeginInit();
             this.panelPaymentAdd.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numAmount)).BeginInit();
@@ -101,7 +103,8 @@ namespace StomaDesk.Forms
             //
             // panelHeader
             //
-            this.panelHeader.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(245)))), ((int)(((byte)(250)))));
+            this.panelHeader.BackColor = System.Drawing.Color.White;
+            this.panelHeader.Controls.Add(this.avatarPatient);
             this.panelHeader.Controls.Add(this.lblName);
             this.panelHeader.Controls.Add(this.lblDetails);
             this.panelHeader.Controls.Add(this.lblAllergies);
@@ -110,24 +113,32 @@ namespace StomaDesk.Forms
             this.panelHeader.Dock = System.Windows.Forms.DockStyle.Top;
             this.panelHeader.Location = new System.Drawing.Point(0, 0);
             this.panelHeader.Name = "panelHeader";
-            this.panelHeader.Size = new System.Drawing.Size(1064, 86);
+            this.panelHeader.Size = new System.Drawing.Size(1064, 98);
             this.panelHeader.TabIndex = 0;
+            //
+            // avatarPatient
+            //
+            this.avatarPatient.Font = new System.Drawing.Font("Segoe UI", 15F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.avatarPatient.Location = new System.Drawing.Point(20, 18);
+            this.avatarPatient.Name = "avatarPatient";
+            this.avatarPatient.Size = new System.Drawing.Size(60, 60);
+            this.avatarPatient.TabIndex = 5;
             //
             // lblName
             //
             this.lblName.AutoSize = true;
-            this.lblName.Font = new System.Drawing.Font("Segoe UI", 15F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblName.Location = new System.Drawing.Point(12, 8);
+            this.lblName.Font = new System.Drawing.Font("Segoe UI", 16F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblName.Location = new System.Drawing.Point(92, 12);
             this.lblName.Name = "lblName";
-            this.lblName.Size = new System.Drawing.Size(90, 28);
+            this.lblName.Size = new System.Drawing.Size(90, 30);
             this.lblName.TabIndex = 0;
             this.lblName.Text = "Pacient";
             //
             // lblDetails
             //
             this.lblDetails.AutoSize = true;
-            this.lblDetails.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
-            this.lblDetails.Location = new System.Drawing.Point(15, 42);
+            this.lblDetails.ForeColor = System.Drawing.Color.DimGray;
+            this.lblDetails.Location = new System.Drawing.Point(95, 45);
             this.lblDetails.Name = "lblDetails";
             this.lblDetails.Size = new System.Drawing.Size(40, 15);
             this.lblDetails.TabIndex = 1;
@@ -136,20 +147,20 @@ namespace StomaDesk.Forms
             // lblAllergies
             //
             this.lblAllergies.AutoSize = true;
-            this.lblAllergies.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblAllergies.Location = new System.Drawing.Point(15, 62);
+            this.lblAllergies.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblAllergies.Location = new System.Drawing.Point(92, 66);
             this.lblAllergies.Name = "lblAllergies";
-            this.lblAllergies.Size = new System.Drawing.Size(45, 15);
+            this.lblAllergies.Size = new System.Drawing.Size(60, 21);
             this.lblAllergies.TabIndex = 2;
             this.lblAllergies.Text = "Alergii";
             //
             // lblBalance
             //
             this.lblBalance.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.lblBalance.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblBalance.Location = new System.Drawing.Point(660, 8);
+            this.lblBalance.Font = new System.Drawing.Font("Segoe UI", 11.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblBalance.Location = new System.Drawing.Point(620, 14);
             this.lblBalance.Name = "lblBalance";
-            this.lblBalance.Size = new System.Drawing.Size(390, 28);
+            this.lblBalance.Size = new System.Drawing.Size(424, 32);
             this.lblBalance.TabIndex = 3;
             this.lblBalance.Text = "Sold";
             this.lblBalance.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
@@ -157,7 +168,7 @@ namespace StomaDesk.Forms
             // btnEditPatient
             //
             this.btnEditPatient.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnEditPatient.Location = new System.Drawing.Point(910, 44);
+            this.btnEditPatient.Location = new System.Drawing.Point(904, 56);
             this.btnEditPatient.Name = "btnEditPatient";
             this.btnEditPatient.Size = new System.Drawing.Size(140, 30);
             this.btnEditPatient.TabIndex = 4;
@@ -165,31 +176,37 @@ namespace StomaDesk.Forms
             this.btnEditPatient.UseVisualStyleBackColor = true;
             this.btnEditPatient.Click += new System.EventHandler(this.btnEditPatient_Click);
             //
-            // tabCard
+            // navCard
             //
-            this.tabCard.Controls.Add(this.tabOdontogram);
-            this.tabCard.Controls.Add(this.tabPlan);
-            this.tabCard.Controls.Add(this.tabAppointments);
-            this.tabCard.Controls.Add(this.tabPayments);
-            this.tabCard.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tabCard.Location = new System.Drawing.Point(0, 86);
-            this.tabCard.Name = "tabCard";
-            this.tabCard.Padding = new System.Drawing.Point(14, 6);
-            this.tabCard.SelectedIndex = 0;
-            this.tabCard.Size = new System.Drawing.Size(1064, 615);
-            this.tabCard.TabIndex = 1;
+            this.navCard.BarStyle = StomaDesk.Controls.NavBarStyle.Tabs;
+            this.navCard.Dock = System.Windows.Forms.DockStyle.Top;
+            this.navCard.Location = new System.Drawing.Point(0, 98);
+            this.navCard.Name = "navCard";
+            this.navCard.Size = new System.Drawing.Size(1064, 44);
+            this.navCard.TabIndex = 1;
             //
-            // tabOdontogram
+            // panelPages
             //
-            this.tabOdontogram.Controls.Add(this.odontogram);
-            this.tabOdontogram.Controls.Add(this.panelTooth);
-            this.tabOdontogram.Location = new System.Drawing.Point(4, 30);
-            this.tabOdontogram.Name = "tabOdontogram";
-            this.tabOdontogram.Padding = new System.Windows.Forms.Padding(6);
-            this.tabOdontogram.Size = new System.Drawing.Size(1056, 581);
-            this.tabOdontogram.TabIndex = 0;
-            this.tabOdontogram.Text = "Odontogramă";
-            this.tabOdontogram.UseVisualStyleBackColor = true;
+            this.panelPages.Controls.Add(this.pageOdontogram);
+            this.panelPages.Controls.Add(this.pagePlan);
+            this.panelPages.Controls.Add(this.pageAppointments);
+            this.panelPages.Controls.Add(this.pagePayments);
+            this.panelPages.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.panelPages.Location = new System.Drawing.Point(0, 142);
+            this.panelPages.Name = "panelPages";
+            this.panelPages.Size = new System.Drawing.Size(1064, 559);
+            this.panelPages.TabIndex = 2;
+            //
+            // pageOdontogram
+            //
+            this.pageOdontogram.Controls.Add(this.odontogram);
+            this.pageOdontogram.Controls.Add(this.panelTooth);
+            this.pageOdontogram.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pageOdontogram.Location = new System.Drawing.Point(0, 0);
+            this.pageOdontogram.Name = "pageOdontogram";
+            this.pageOdontogram.Padding = new System.Windows.Forms.Padding(16, 12, 16, 4);
+            this.pageOdontogram.Size = new System.Drawing.Size(1064, 559);
+            this.pageOdontogram.TabIndex = 0;
             //
             // odontogram
             //
@@ -281,18 +298,17 @@ namespace StomaDesk.Forms
             this.lblToothHint.TabIndex = 6;
             this.lblToothHint.Text = "Click pe un dinte îl selectează, click dreapta schimbă rapid starea, săgețile mută selecția.";
             //
-            // tabPlan
+            // pagePlan
             //
-            this.tabPlan.Controls.Add(this.gridPlan);
-            this.tabPlan.Controls.Add(this.panelPlanActions);
-            this.tabPlan.Controls.Add(this.panelPlanAdd);
-            this.tabPlan.Location = new System.Drawing.Point(4, 30);
-            this.tabPlan.Name = "tabPlan";
-            this.tabPlan.Padding = new System.Windows.Forms.Padding(6);
-            this.tabPlan.Size = new System.Drawing.Size(1056, 581);
-            this.tabPlan.TabIndex = 1;
-            this.tabPlan.Text = "Plan de tratament";
-            this.tabPlan.UseVisualStyleBackColor = true;
+            this.pagePlan.Controls.Add(this.gridPlan);
+            this.pagePlan.Controls.Add(this.panelPlanActions);
+            this.pagePlan.Controls.Add(this.panelPlanAdd);
+            this.pagePlan.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pagePlan.Location = new System.Drawing.Point(0, 0);
+            this.pagePlan.Name = "pagePlan";
+            this.pagePlan.Padding = new System.Windows.Forms.Padding(16, 6, 16, 6);
+            this.pagePlan.Size = new System.Drawing.Size(1064, 559);
+            this.pagePlan.TabIndex = 1;
             //
             // gridPlan
             //
@@ -483,17 +499,16 @@ namespace StomaDesk.Forms
             this.lblPlanTotals.Text = "";
             this.lblPlanTotals.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             //
-            // tabAppointments
+            // pageAppointments
             //
-            this.tabAppointments.Controls.Add(this.gridAppointments);
-            this.tabAppointments.Controls.Add(this.panelAppointmentActions);
-            this.tabAppointments.Location = new System.Drawing.Point(4, 30);
-            this.tabAppointments.Name = "tabAppointments";
-            this.tabAppointments.Padding = new System.Windows.Forms.Padding(6);
-            this.tabAppointments.Size = new System.Drawing.Size(1056, 581);
-            this.tabAppointments.TabIndex = 2;
-            this.tabAppointments.Text = "Programări";
-            this.tabAppointments.UseVisualStyleBackColor = true;
+            this.pageAppointments.Controls.Add(this.gridAppointments);
+            this.pageAppointments.Controls.Add(this.panelAppointmentActions);
+            this.pageAppointments.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pageAppointments.Location = new System.Drawing.Point(0, 0);
+            this.pageAppointments.Name = "pageAppointments";
+            this.pageAppointments.Padding = new System.Windows.Forms.Padding(16, 6, 16, 16);
+            this.pageAppointments.Size = new System.Drawing.Size(1064, 559);
+            this.pageAppointments.TabIndex = 2;
             //
             // gridAppointments
             //
@@ -534,18 +549,17 @@ namespace StomaDesk.Forms
             this.btnEditAppointment.UseVisualStyleBackColor = true;
             this.btnEditAppointment.Click += new System.EventHandler(this.btnEditAppointment_Click);
             //
-            // tabPayments
+            // pagePayments
             //
-            this.tabPayments.Controls.Add(this.gridPayments);
-            this.tabPayments.Controls.Add(this.lblPaymentTotals);
-            this.tabPayments.Controls.Add(this.panelPaymentAdd);
-            this.tabPayments.Location = new System.Drawing.Point(4, 30);
-            this.tabPayments.Name = "tabPayments";
-            this.tabPayments.Padding = new System.Windows.Forms.Padding(6);
-            this.tabPayments.Size = new System.Drawing.Size(1056, 581);
-            this.tabPayments.TabIndex = 3;
-            this.tabPayments.Text = "Încasări";
-            this.tabPayments.UseVisualStyleBackColor = true;
+            this.pagePayments.Controls.Add(this.gridPayments);
+            this.pagePayments.Controls.Add(this.lblPaymentTotals);
+            this.pagePayments.Controls.Add(this.panelPaymentAdd);
+            this.pagePayments.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pagePayments.Location = new System.Drawing.Point(0, 0);
+            this.pagePayments.Name = "pagePayments";
+            this.pagePayments.Padding = new System.Windows.Forms.Padding(16, 6, 16, 6);
+            this.pagePayments.Size = new System.Drawing.Size(1064, 559);
+            this.pagePayments.TabIndex = 3;
             //
             // gridPayments
             //
@@ -653,7 +667,8 @@ namespace StomaDesk.Forms
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1064, 701);
-            this.Controls.Add(this.tabCard);
+            this.Controls.Add(this.panelPages);
+            this.Controls.Add(this.navCard);
             this.Controls.Add(this.panelHeader);
             this.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.MinimizeBox = false;
@@ -664,21 +679,21 @@ namespace StomaDesk.Forms
             this.Text = "Fișa pacientului";
             this.panelHeader.ResumeLayout(false);
             this.panelHeader.PerformLayout();
-            this.tabCard.ResumeLayout(false);
-            this.tabOdontogram.ResumeLayout(false);
+            this.panelPages.ResumeLayout(false);
+            this.pageOdontogram.ResumeLayout(false);
             this.panelTooth.ResumeLayout(false);
             this.panelTooth.PerformLayout();
-            this.tabPlan.ResumeLayout(false);
+            this.pagePlan.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.gridPlan)).EndInit();
             this.panelPlanAdd.ResumeLayout(false);
             this.panelPlanAdd.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numDiscount)).EndInit();
             this.panelPlanActions.ResumeLayout(false);
             this.panelPlanActions.PerformLayout();
-            this.tabAppointments.ResumeLayout(false);
+            this.pageAppointments.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.gridAppointments)).EndInit();
             this.panelAppointmentActions.ResumeLayout(false);
-            this.tabPayments.ResumeLayout(false);
+            this.pagePayments.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.gridPayments)).EndInit();
             this.panelPaymentAdd.ResumeLayout(false);
             this.panelPaymentAdd.PerformLayout();
@@ -692,11 +707,13 @@ namespace StomaDesk.Forms
         private System.Windows.Forms.Panel panelHeader;
         private System.Windows.Forms.Label lblName;
         private System.Windows.Forms.Label lblDetails;
-        private System.Windows.Forms.Label lblAllergies;
-        private System.Windows.Forms.Label lblBalance;
+        private StomaDesk.Controls.Badge lblAllergies;
+        private StomaDesk.Controls.Badge lblBalance;
         private System.Windows.Forms.Button btnEditPatient;
-        private System.Windows.Forms.TabControl tabCard;
-        private System.Windows.Forms.TabPage tabOdontogram;
+        private StomaDesk.Controls.Avatar avatarPatient;
+        private StomaDesk.Controls.NavBar navCard;
+        private System.Windows.Forms.Panel panelPages;
+        private System.Windows.Forms.Panel pageOdontogram;
         private StomaDesk.Controls.OdontogramControl odontogram;
         private System.Windows.Forms.Panel panelTooth;
         private System.Windows.Forms.Label lblTooth;
@@ -706,7 +723,7 @@ namespace StomaDesk.Forms
         private System.Windows.Forms.Button btnApplyTooth;
         private System.Windows.Forms.Button btnPlanTooth;
         private System.Windows.Forms.Label lblToothHint;
-        private System.Windows.Forms.TabPage tabPlan;
+        private System.Windows.Forms.Panel pagePlan;
         private System.Windows.Forms.DataGridView gridPlan;
         private System.Windows.Forms.Panel panelPlanAdd;
         private System.Windows.Forms.Label lblProcedure;
@@ -726,12 +743,12 @@ namespace StomaDesk.Forms
         private System.Windows.Forms.Button btnPrintEstimate;
         private System.Windows.Forms.Button btnSaveEstimate;
         private System.Windows.Forms.Label lblPlanTotals;
-        private System.Windows.Forms.TabPage tabAppointments;
+        private System.Windows.Forms.Panel pageAppointments;
         private System.Windows.Forms.DataGridView gridAppointments;
         private System.Windows.Forms.Panel panelAppointmentActions;
         private System.Windows.Forms.Button btnNewAppointment;
         private System.Windows.Forms.Button btnEditAppointment;
-        private System.Windows.Forms.TabPage tabPayments;
+        private System.Windows.Forms.Panel pagePayments;
         private System.Windows.Forms.DataGridView gridPayments;
         private System.Windows.Forms.Panel panelPaymentAdd;
         private System.Windows.Forms.Label lblAmount;

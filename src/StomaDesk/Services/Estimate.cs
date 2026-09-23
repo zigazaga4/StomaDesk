@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using StomaDesk.Data;
 using StomaDesk.Models;
+using StomaDesk.Ui;
 
 namespace StomaDesk.Services
 {
@@ -68,7 +69,7 @@ namespace StomaDesk.Services
         private static readonly string[] Headers = { "Nr.", "Dinte", "Procedură", "Medic", "Preț", "Disc.", "Total" };
         private static readonly float[] Widths = { 0.06f, 0.07f, 0.39f, 0.19f, 0.11f, 0.07f, 0.11f };
         private static readonly bool[] AlignRight = { false, false, false, false, true, true, true };
-        private static readonly Color Accent = Color.FromArgb(31, 94, 160);
+        private static readonly Color Accent = Theme.Brand;
 
         /// <summary>Draws one page starting at <paramref name="firstLine"/> and returns the first line not drawn.</summary>
         public static int DrawPage(Graphics g, RectangleF area, Estimate estimate, int firstLine, int pageNumber)
@@ -81,8 +82,8 @@ namespace StomaDesk.Services
             using (var smallFont = new Font(FontFamily.GenericSansSerif, 8f))
             using (var accentBrush = new SolidBrush(Accent))
             using (var grayBrush = new SolidBrush(Color.FromArgb(90, 90, 90)))
-            using (var stripeBrush = new SolidBrush(Color.FromArgb(244, 247, 251)))
-            using (var headerBrush = new SolidBrush(Color.FromArgb(228, 236, 246)))
+            using (var stripeBrush = new SolidBrush(GdiKit.Tint(Accent, 0.95f)))
+            using (var headerBrush = new SolidBrush(GdiKit.Tint(Accent, 0.85f)))
             using (var accentPen = new Pen(Accent, 2f))
             using (var linePen = new Pen(Color.FromArgb(200, 200, 200), 1f))
             {
@@ -90,11 +91,14 @@ namespace StomaDesk.Services
                 float width = area.Width;
                 float y = area.Top;
 
-                // Clinic on the left, document title on the right.
-                g.DrawString(estimate.Clinic.Name, titleFont, Brushes.Black, x, y);
+                // Logo and clinic on the left, document title on the right.
+                float logo = titleFont.GetHeight(g) + smallFont.GetHeight(g) + 2f;
+                Glyphs.DrawLogo(g, new RectangleF(x, y, logo, logo));
+                float textX = x + logo + 10f;
+                g.DrawString(estimate.Clinic.Name, titleFont, Brushes.Black, textX, y);
                 DrawRight(g, "DEVIZ ESTIMATIV", titleFont, accentBrush, x + width, y);
                 y += titleFont.GetHeight(g) + 2f;
-                g.DrawString(estimate.Clinic.Address + "   Tel. " + estimate.Clinic.Phone, smallFont, grayBrush, x, y);
+                g.DrawString(estimate.Clinic.Address + "   Tel. " + estimate.Clinic.Phone, smallFont, grayBrush, textX, y);
                 DrawRight(g, string.Format("Data: {0}   Pagina {1}", Fmt.Date(estimate.Date), pageNumber), smallFont, grayBrush, x + width, y);
                 y += smallFont.GetHeight(g) + 8f;
                 g.DrawLine(accentPen, x, y, x + width, y);

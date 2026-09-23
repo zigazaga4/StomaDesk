@@ -29,6 +29,15 @@ namespace StomaDesk.Forms
         public PatientCardForm()
         {
             InitializeComponent();
+
+            navCard.AddPage("Odontogramă", Glyph.Tooth, pageOdontogram, null);
+            navCard.AddPage("Plan de tratament", Glyph.Plan, pagePlan, null);
+            navCard.AddPage("Programări", Glyph.Agenda, pageAppointments, null);
+            navCard.AddPage("Încasări", Glyph.Payments, pagePayments, null);
+
+            Theme.Primary(btnApplyTooth, btnAddProcedure, btnNewAppointment, btnAddPayment);
+            Theme.Destructive(btnDeleteTreatment);
+            Theme.Apply(this);
         }
 
         public PatientCardForm(ClinicStore store, Patient patient)
@@ -53,10 +62,10 @@ namespace StomaDesk.Forms
             }
         }
 
-        /// <summary>Lets the UI smoke test walk through the tabs.</summary>
-        internal TabControl Tabs
+        /// <summary>Lets the UI smoke test walk through the pages.</summary>
+        internal NavBar Navigation
         {
-            get { return tabCard; }
+            get { return navCard; }
         }
 
         protected override void OnFormClosed(FormClosedEventArgs e)
@@ -85,6 +94,7 @@ namespace StomaDesk.Forms
             Grid.AddColumn(gridPlan, "Total", 90, alignRight: true);
             Grid.AddColumn(gridPlan, "Status", 100);
             Grid.AddColumn(gridPlan, "Finalizat la", 100);
+            Grid.BadgeColumn<TreatmentItem>(gridPlan, 6, t => Theme.Tone(t.Status));
 
             Grid.SetupList(gridAppointments);
             Grid.AddColumn(gridAppointments, "Data", 100);
@@ -94,6 +104,7 @@ namespace StomaDesk.Forms
             Grid.AddColumn(gridAppointments, "Motiv", 260, fill: true);
             Grid.AddColumn(gridAppointments, "Status", 110);
             Grid.AddColumn(gridAppointments, "SMS", 60);
+            Grid.BadgeColumn<Appointment>(gridAppointments, 5, a => Theme.Tone(a.Status));
 
             Grid.SetupList(gridPayments);
             Grid.AddColumn(gridPayments, "Data", 100);
@@ -144,6 +155,7 @@ namespace StomaDesk.Forms
         {
             Text = "Fișa pacientului: " + _patient.FullName;
             lblName.Text = _patient.FullName;
+            avatarPatient.Text = _patient.FullName;
 
             var details = new List<string>();
             if (!string.IsNullOrEmpty(_patient.Cnp))
@@ -160,7 +172,7 @@ namespace StomaDesk.Forms
 
             bool allergic = !string.IsNullOrWhiteSpace(_patient.Allergies);
             lblAllergies.Text = allergic ? "ALERGII: " + _patient.Allergies : "Fără alergii cunoscute";
-            lblAllergies.ForeColor = allergic ? Color.Firebrick : Color.DimGray;
+            lblAllergies.ForeColor = allergic ? Theme.Danger : Theme.Muted;
 
             Balance balance = _store.BalanceFor(_patient.Id);
             if (balance.Due > 0m)
@@ -169,7 +181,7 @@ namespace StomaDesk.Forms
                 lblBalance.Text = "Avans: " + Fmt.Money(-balance.Due);
             else
                 lblBalance.Text = "Sold la zi";
-            lblBalance.ForeColor = balance.Due > 0m ? Color.Firebrick : Color.SeaGreen;
+            lblBalance.ForeColor = balance.Due > 0m ? Theme.Danger : Theme.Success;
         }
 
         private void RefreshTeeth()
@@ -212,23 +224,11 @@ namespace StomaDesk.Forms
                     Fmt.Number(t.Total),
                     Labels.For(t.Status),
                     Fmt.Date(t.CompletedAt)
-                },
-                PlanRowColor);
+                });
 
             decimal open = items.Where(t => t.Status != TreatmentStatus.Done).Sum(t => t.Total);
             decimal done = items.Where(t => t.Status == TreatmentStatus.Done).Sum(t => t.Total);
             lblPlanTotals.Text = string.Format("De efectuat: {0}      Finalizat: {1}", Fmt.Money(open), Fmt.Money(done));
-        }
-
-        private static Color PlanRowColor(TreatmentItem item)
-        {
-            switch (item.Status)
-            {
-                case TreatmentStatus.Done: return Color.FromArgb(232, 245, 236);
-                case TreatmentStatus.InProgress: return Color.FromArgb(255, 247, 222);
-                case TreatmentStatus.Accepted: return Color.FromArgb(234, 242, 252);
-                default: return Color.Empty;
-            }
         }
 
         private void RefreshAppointments()
@@ -244,7 +244,7 @@ namespace StomaDesk.Forms
                     Labels.For(a.Status),
                     a.ReminderSent ? "trimis" : ""
                 },
-                a => a.Start.Date >= DateTime.Today && a.IsActive ? Color.FromArgb(234, 242, 252) : Color.Empty);
+                a => a.Start.Date >= DateTime.Today && a.IsActive ? GdiKit.Tint(Theme.Info, 0.94f) : Color.Empty);
         }
 
         private void RefreshPayments()
@@ -311,7 +311,7 @@ namespace StomaDesk.Forms
             if (tooth == 0)
                 return;
 
-            tabCard.SelectedTab = tabPlan;
+            navCard.ShowPage(pagePlan);
             cboPlanTooth.SelectedItem = tooth;
             cboProcedure.Focus();
         }

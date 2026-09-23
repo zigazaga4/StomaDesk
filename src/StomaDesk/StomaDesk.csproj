@@ -14,6 +14,8 @@
     <Product>StomaDesk</Product>
     <AssemblyTitle>StomaDesk, gestiune cabinet stomatologic</AssemblyTitle>
     <Version>1.0.0</Version>
+    <!-- Keeps Application.ProductVersion at "1.0.0" instead of appending the git commit hash. -->
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
   </PropertyGroup>
 
@@ -29,6 +31,10 @@
   <!-- Designer nesting, the same entries Visual Studio writes for forms and user controls. -->
   <ItemGroup>
     <Compile Update="Controls\OdontogramControl.cs" SubType="Component" />
+    <Compile Update="Controls\NavBar.cs" SubType="Component" />
+    <Compile Update="Controls\Card.cs" SubType="Component" />
+    <Compile Update="Controls\Badge.cs" SubType="Component" />
+    <Compile Update="Controls\Avatar.cs" SubType="Component" />
     <Compile Update="Forms\StoreView.cs" SubType="UserControl" />
     <Compile Update="Forms\MainForm.cs" SubType="Form" />
     <Compile Update="Forms\MainForm.Designer.cs" DependentUpon="MainForm.cs" />

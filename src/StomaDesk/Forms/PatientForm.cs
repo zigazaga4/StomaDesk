@@ -22,6 +22,8 @@ namespace StomaDesk.Forms
         public PatientForm()
         {
             InitializeComponent();
+            Theme.Primary(btnOk);
+            Theme.Apply(this);
         }
 
         public PatientForm(ClinicStore store, Patient patient)

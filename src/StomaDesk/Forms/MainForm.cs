@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Windows.Forms;
+using StomaDesk.Controls;
 using StomaDesk.Data;
 using StomaDesk.Services;
 using StomaDesk.Ui;
@@ -16,6 +17,18 @@ namespace StomaDesk.Forms
         public MainForm()
         {
             InitializeComponent();
+
+            navMain.AddPage("Pacienți", Glyph.Patients, patientsView,
+                "Caută după nume, CNP sau telefon. Enter sau dublu click deschide fișa pacientului.").Shortcut = "Ctrl+1";
+            navMain.AddPage("Agendă", Glyph.Agenda, agendaView,
+                "Dublu click pe un loc liber face o programare; click dreapta pe o programare îi schimbă statusul.").Shortcut = "Ctrl+2";
+            navMain.AddPage("Rapoarte", Glyph.Reports, reportsView,
+                "Venituri, încasări și activitate pe perioada aleasă, cu export CSV pentru Excel.").Shortcut = "Ctrl+3";
+            navMain.AddPage("Nomenclatoare", Glyph.Settings, settingsView,
+                "Medicii, lista de prețuri și datele clinicii care apar pe deviz.").Shortcut = "Ctrl+4";
+            navMain.Footer = "Versiunea " + Application.ProductVersion;
+            ShowPageTitle();
+            Theme.Apply(this);
         }
 
         public MainForm(ClinicStore store)
@@ -33,10 +46,10 @@ namespace StomaDesk.Forms
             UpdateTitle();
         }
 
-        /// <summary>Lets the UI smoke test walk through the tabs.</summary>
-        internal TabControl Tabs
+        /// <summary>Lets the UI smoke test walk through the pages.</summary>
+        internal NavBar Navigation
         {
-            get { return tabMain; }
+            get { return navMain; }
         }
 
         protected override void OnFormClosed(FormClosedEventArgs e)
@@ -55,6 +68,19 @@ namespace StomaDesk.Forms
         private void UpdateTitle()
         {
             Text = "StomaDesk   " + _store.Info.Name;
+            navMain.Subtitle = _store.Info.Name;
+        }
+
+        private void navMain_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            ShowPageTitle();
+        }
+
+        private void ShowPageTitle()
+        {
+            NavItem item = navMain.SelectedItem;
+            lblPageTitle.Text = item == null ? "" : item.Text;
+            lblPageHint.Text = item == null ? "" : item.Description;
         }
 
         private void mnuBackup_Click(object sender, EventArgs e)
@@ -93,13 +119,13 @@ namespace StomaDesk.Forms
         private void mnuView_Click(object sender, EventArgs e)
         {
             if (sender == mnuViewPatients)
-                tabMain.SelectedTab = tabPatients;
+                navMain.ShowPage(patientsView);
             else if (sender == mnuViewAgenda)
-                tabMain.SelectedTab = tabAgenda;
+                navMain.ShowPage(agendaView);
             else if (sender == mnuViewReports)
-                tabMain.SelectedTab = tabReports;
+                navMain.ShowPage(reportsView);
             else if (sender == mnuViewSettings)
-                tabMain.SelectedTab = tabSettings;
+                navMain.ShowPage(settingsView);
         }
 
         private void mnuAbout_Click(object sender, EventArgs e)

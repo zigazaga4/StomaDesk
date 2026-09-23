@@ -4,7 +4,6 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
@@ -69,14 +68,7 @@ namespace StomaDesk.Diagnostics
                     main.Location = new Point(20, 20);
                     main.Show();
                     Pump();
-                    int index = 0;
-                    foreach (TabPage page in main.Tabs.TabPages)
-                    {
-                        main.Tabs.SelectedTab = page;
-                        Pump();
-                        check.Check("fereastra principală, tab " + page.Text, main.Tabs.SelectedTab == page);
-                        Capture(main, outputFolder, "1" + index++ + "-" + page.Name);
-                    }
+                    VisitPages(check, main, main.Navigation, "fereastra principală", "1", outputFolder);
 
                     Patient patient = store.FindPatients("").OrderByDescending(p => p.Teeth.Count).First();
                     using (var card = new PatientCardForm(store, patient))
@@ -85,14 +77,7 @@ namespace StomaDesk.Diagnostics
                         card.Location = new Point(40, 40);
                         card.Show(main);
                         Pump();
-                        index = 0;
-                        foreach (TabPage page in card.Tabs.TabPages)
-                        {
-                            card.Tabs.SelectedTab = page;
-                            Pump();
-                            check.Check("fișa pacientului, tab " + page.Text, card.Tabs.SelectedTab == page);
-                            Capture(card, outputFolder, "2" + index++ + "-" + page.Name);
-                        }
+                        VisitPages(check, card, card.Navigation, "fișa pacientului", "2", outputFolder);
                         card.Close();
                     }
 
@@ -132,6 +117,20 @@ namespace StomaDesk.Diagnostics
                 DeleteTemp(path);
             }
             return check.Report();
+        }
+
+        /// <summary>Opens every page of a window through its navigation bar; the file names keep the page order.</summary>
+        private static void VisitPages(Checker check, Form form, NavBar navigation, string window, string prefix, string outputFolder)
+        {
+            for (int i = 0; i < navigation.Items.Count; i++)
+            {
+                NavItem item = navigation.Items[i];
+                navigation.SelectItem(i);
+                Pump();
+                bool onlyThisPage = navigation.Items.All(other => other.Page.Visible == (other == item));
+                check.Check(window + ", pagina " + item.Text, navigation.SelectedIndex == i && onlyThisPage);
+                Capture(form, outputFolder, prefix + i + "-" + item.Page.Name);
+            }
         }
 
         private static void CheckCnp(Checker check)
@@ -342,11 +341,7 @@ namespace StomaDesk.Diagnostics
             return ink;
         }
 
-        /// <summary>
-        /// Saves what the user sees in the window. It copies from the window's own device context, because
-        /// copying from the screen returns a black image on Wayland desktops. Mono on Linux has no user32.dll,
-        /// so there it falls back to a screen copy.
-        /// </summary>
+        /// <summary>Saves what the user sees in the window.</summary>
         private static void Capture(Form form, string outputFolder, string name)
         {
             if (outputFolder == null)
@@ -354,45 +349,8 @@ namespace StomaDesk.Diagnostics
 
             form.Activate();
             Pump();
-            Rectangle bounds = form.Bounds;
-            using (var image = new Bitmap(bounds.Width, bounds.Height))
-            {
-                using (Graphics g = Graphics.FromImage(image))
-                {
-                    try
-                    {
-                        IntPtr target = g.GetHdc();
-                        IntPtr source = NativeMethods.GetWindowDC(form.Handle);
-                        NativeMethods.BitBlt(target, 0, 0, bounds.Width, bounds.Height, source, 0, 0, NativeMethods.SrcCopy);
-                        NativeMethods.ReleaseDC(form.Handle, source);
-                        g.ReleaseHdc(target);
-                    }
-                    catch (DllNotFoundException)
-                    {
-                        g.CopyFromScreen(bounds.Location, Point.Empty, bounds.Size);
-                    }
-                    catch (EntryPointNotFoundException)
-                    {
-                        g.CopyFromScreen(bounds.Location, Point.Empty, bounds.Size);
-                    }
-                }
+            using (Bitmap image = WindowCapture.Take(form))
                 image.Save(Path.Combine(outputFolder, name + ".png"), ImageFormat.Png);
-            }
-        }
-
-        private static class NativeMethods
-        {
-            public const int SrcCopy = 0x00CC0020;
-
-            [DllImport("user32.dll")]
-            public static extern IntPtr GetWindowDC(IntPtr window);
-
-            [DllImport("user32.dll")]
-            public static extern int ReleaseDC(IntPtr window, IntPtr dc);
-
-            [DllImport("gdi32.dll")]
-            [return: MarshalAs(UnmanagedType.Bool)]
-            public static extern bool BitBlt(IntPtr target, int x, int y, int width, int height, IntPtr source, int sourceX, int sourceY, int operation);
         }
 
         private static void Pump()
