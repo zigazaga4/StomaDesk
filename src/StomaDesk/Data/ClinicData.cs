@@ -4,7 +4,10 @@ using StomaDesk.Models;
 
 namespace StomaDesk.Data
 {
-    /// <summary>Everything the clinic stores, saved as one XML document.</summary>
+    /// <summary>
+    /// Everything the clinic stores: what ClinicStore keeps in memory after reading PostgreSQL,
+    /// and the shape of the XML backup file (File > Copie de siguranță, loaded back with --import).
+    /// </summary>
     [XmlRoot("Clinic")]
     public class ClinicData
     {
@@ -44,7 +47,13 @@ namespace StomaDesk.Data
 
         public string NewReceiptNo()
         {
-            return string.Format("CH-{0:D6}", NextReceiptNo++);
+            return FormatReceiptNo(NextReceiptNo++);
+        }
+
+        /// <summary>CH-000042. Used for demo data here and for the database's receipt sequence in ClinicDatabase.</summary>
+        public static string FormatReceiptNo(long number)
+        {
+            return string.Format("CH-{0:D6}", number);
         }
     }
 

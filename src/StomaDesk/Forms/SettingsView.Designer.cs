@@ -245,7 +245,7 @@ namespace StomaDesk.Forms
             this.lblDataFile.Name = "lblDataFile";
             this.lblDataFile.Size = new System.Drawing.Size(90, 15);
             this.lblDataFile.TabIndex = 8;
-            this.lblDataFile.Text = "Fișier de date:";
+            this.lblDataFile.Text = "Baza de date:";
             //
             // btnSave
             //

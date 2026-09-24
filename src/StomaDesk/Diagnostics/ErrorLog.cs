@@ -1,15 +1,18 @@
 using System;
 using System.IO;
-using StomaDesk.Data;
 
 namespace StomaDesk.Diagnostics
 {
-    /// <summary>Appends unexpected exceptions to erori.log next to the data file.</summary>
+    /// <summary>Appends unexpected exceptions to %APPDATA%\StomaDesk\erori.log.</summary>
     internal static class ErrorLog
     {
         public static string FilePath
         {
-            get { return Path.Combine(Path.GetDirectoryName(ClinicStore.DefaultPath), "erori.log"); }
+            get
+            {
+                string root = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                return Path.Combine(root, "StomaDesk", "erori.log");
+            }
         }
 
         public static void Write(Exception exception)
