@@ -4,6 +4,7 @@ using System.IO;
 using System.Windows.Forms;
 using StomaDesk.Controls;
 using StomaDesk.Data;
+using StomaDesk.Diagnostics;
 using StomaDesk.Services;
 using StomaDesk.Ui;
 
@@ -42,7 +43,7 @@ namespace StomaDesk.Forms
 
             store.Changed += Store_Changed;
             lblToday.Text = Fmt.DayTitle(DateTime.Today);
-            lblStatus.Text = "Date: " + store.FilePath;
+            lblStatus.Text = "Date: " + store.Location;
             UpdateTitle();
         }
 
@@ -61,7 +62,7 @@ namespace StomaDesk.Forms
 
         private void Store_Changed(object sender, EventArgs e)
         {
-            lblStatus.Text = string.Format("Salvat la {0:HH:mm:ss} în {1}", DateTime.Now, _store.FilePath);
+            lblStatus.Text = string.Format("Salvat la {0:HH:mm:ss} în {1}", DateTime.Now, _store.Location);
             UpdateTitle();
         }
 
@@ -92,22 +93,24 @@ namespace StomaDesk.Forms
                 if (dialog.ShowDialog(this) != DialogResult.OK)
                     return;
 
-                File.Copy(_store.FilePath, dialog.FileName, true);
-                Dialogs.Info(this, "Copia de siguranță a fost salvată în:\n" + dialog.FileName);
+                _store.ExportXml(dialog.FileName);
+                Dialogs.Info(this, "Copia de siguranță a fost salvată în:\n" + dialog.FileName +
+                    "\n\nSe încarcă într-o bază de date goală cu:  StomaDesk.exe --import fișier.xml");
             }
         }
 
         private void mnuOpenDataFolder_Click(object sender, EventArgs e)
         {
-            string folder = Path.GetDirectoryName(_store.FilePath);
+            string folder = Path.GetDirectoryName(ErrorLog.FilePath);
             try
             {
+                Directory.CreateDirectory(folder);
                 Process.Start(folder);
             }
             catch (Exception)
             {
                 // No file manager registered (a bare Linux session, for example): show the path instead.
-                Dialogs.Info(this, "Folderul cu date:\n" + folder);
+                Dialogs.Info(this, "Folderul cu jurnalul de erori:\n" + folder);
             }
         }
 
@@ -134,8 +137,8 @@ namespace StomaDesk.Forms
             string runtime = (mono ? "Mono, CLR " : ".NET Framework, CLR ") + Environment.Version;
             Dialogs.Info(this, string.Format(
                 "StomaDesk {0}\nGestiune cabinet stomatologic, aplicație demonstrativă.\n\n" +
-                "Windows Forms, .NET Framework 4.5, C# 5\nRulează pe: {1}\nSistem: {2}\n\nDate: {3}",
-                Application.ProductVersion, runtime, Environment.OSVersion, _store.FilePath));
+                "Windows Forms, .NET Framework 4.5, C# 5, PostgreSQL\nRulează pe: {1}\nSistem: {2}\n\nDate: {3}",
+                Application.ProductVersion, runtime, Environment.OSVersion, _store.Location));
         }
     }
 }

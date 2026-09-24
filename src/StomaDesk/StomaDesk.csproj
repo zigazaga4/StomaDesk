@@ -20,7 +20,21 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Windows.Forms" />
+  </ItemGroup>
+
+  <!--
+    PostgreSQL driver. Npgsql 4.0 is the last line that still runs on .NET Framework 4.5 (4.1 needs 4.6.1);
+    it speaks SCRAM-SHA-256, the password method PostgreSQL uses by default.
+  -->
+  <ItemGroup>
+    <PackageReference Include="Npgsql" Version="4.0.17" />
+  </ItemGroup>
+
+  <!-- The schema travels inside the exe; ClinicDatabase runs it at every start. -->
+  <ItemGroup>
+    <EmbeddedResource Include="Data\Schema.sql" LogicalName="StomaDesk.Data.Schema.sql" />
   </ItemGroup>
 
   <!-- Lets the .NET SDK build a .NET Framework 4.5 exe on Linux (no Windows or Visual Studio needed). -->

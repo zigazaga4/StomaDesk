@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using StomaDesk.Models;
 using StomaDesk.Services;
@@ -35,45 +34,45 @@ namespace StomaDesk.Data
 
     /// <summary>
     /// The clinic's data in memory plus the rules that keep it consistent.
-    /// Every change is written to disk at once and announced through <see cref="Changed"/>.
+    /// Every change is written to PostgreSQL first, in one transaction, then applied in memory and announced
+    /// through <see cref="Changed"/>; if the write fails, memory stays as it was.
     /// Use it from the UI thread only; background work receives plain copies (see Reminders).
     /// </summary>
     public class ClinicStore
     {
-        private readonly string _path;
+        private readonly ClinicDatabase _database;
         private readonly ClinicData _data;
 
-        private ClinicStore(string path, ClinicData data)
+        private ClinicStore(ClinicDatabase database, ClinicData data)
         {
-            _path = path;
+            _database = database;
             _data = data;
         }
 
         public event EventHandler Changed;
 
-        public static string DefaultPath
+        /// <summary>Opens the clinic database; the first time it creates the tables and fills them with demo data.</summary>
+        public static ClinicStore Open(ClinicDatabase database)
         {
-            get
-            {
-                string root = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-                return Path.Combine(root, "StomaDesk", "clinic.xml");
-            }
+            DateTime today = DateTime.Today;
+            database.EnsureCreated(() => SampleData.Create(today));
+            return new ClinicStore(database, database.Load());
         }
 
-        /// <summary>Opens the data file; the first time it creates one filled with demo data.</summary>
-        public static ClinicStore Open(string path)
+        /// <summary>
+        /// Loads a StomaDesk XML file (a backup from the File menu, or the data file of the XML-only version)
+        /// into an empty database, keeping its ids. Returns false, writing nothing, when the database already has a clinic.
+        /// </summary>
+        public static bool Import(ClinicDatabase database, string xmlPath)
         {
-            if (File.Exists(path))
-                return new ClinicStore(path, XmlClinicFile.Load(path));
-
-            var store = new ClinicStore(path, SampleData.Create(DateTime.Today));
-            store.Save();
-            return store;
+            ClinicData data = XmlClinicFile.Load(xmlPath);
+            return database.EnsureCreated(() => data);
         }
 
-        public string FilePath
+        /// <summary>Where the data lives, for the status bar and the About box.</summary>
+        public string Location
         {
-            get { return _path; }
+            get { return _database.Description; }
         }
 
         public ClinicInfo Info
@@ -81,9 +80,10 @@ namespace StomaDesk.Data
             get { return _data.Info; }
         }
 
-        public void Save()
+        /// <summary>Writes the whole clinic to one XML file, which <see cref="Import"/> can load back.</summary>
+        public void ExportXml(string path)
         {
-            XmlClinicFile.Save(_path, _data);
+            XmlClinicFile.Save(path, _data);
         }
 
         // ---------------------------------------------------------------- doctors and price list
@@ -125,29 +125,28 @@ namespace StomaDesk.Data
         /// <summary>Saves the Settings tab in one write: clinic details, doctors and price list.</summary>
         public void SaveSettings(ClinicInfo info, IList<Doctor> doctors, IList<Procedure> procedures)
         {
+            var removedDoctors = new List<int>();
             foreach (Doctor old in _data.Doctors)
             {
-                bool kept = doctors.Any(d => d.Id == old.Id);
-                if (!kept && IsDoctorUsed(old.Id))
+                if (doctors.Any(d => d.Id == old.Id))
+                    continue;
+                if (IsDoctorUsed(old.Id))
                     throw new InvalidOperationException(string.Format(
                         "{0} are programări sau tratamente în istoric și nu poate fi șters. Debifați „Activ”.", old.Name));
+                removedDoctors.Add(old.Id);
             }
+            List<int> removedProcedures = _data.Procedures
+                .Where(old => !procedures.Any(p => p.Id == old.Id))
+                .Select(p => p.Id)
+                .ToList();
 
-            foreach (Doctor doctor in doctors)
-            {
-                if (doctor.Id == 0)
-                    doctor.Id = _data.NewId();
-            }
-            foreach (Procedure procedure in procedures)
-            {
-                if (procedure.Id == 0)
-                    procedure.Id = _data.NewId();
-            }
+            // New doctors and procedures (Id 0) get their ids from the database here.
+            _database.SaveSettings(info, doctors, removedDoctors, procedures, removedProcedures);
 
             _data.Info = info;
             _data.Doctors = new List<Doctor>(doctors);
             _data.Procedures = new List<Procedure>(procedures);
-            Commit();
+            OnChanged();
         }
 
         // ---------------------------------------------------------------- patients
@@ -187,20 +186,26 @@ namespace StomaDesk.Data
         /// <summary>Adds a new patient (Id 0) or saves the edits made to an existing one.</summary>
         public void SavePatient(Patient patient)
         {
-            if (patient.Id == 0)
-            {
-                patient.Id = _data.NewId();
+            bool isNew = patient.Id == 0;
+            _database.SavePatient(patient);   // a new patient gets its id here
+            if (isNew)
                 _data.Patients.Add(patient);
-            }
-            Commit();
+            OnChanged();
         }
 
         public void SetTooth(Patient patient, int tooth, ToothState state, string note)
         {
             if (!Dentition.IsValid(tooth))
                 throw new ArgumentOutOfRangeException("tooth", tooth, "Număr de dinte inexistent în sistemul FDI.");
+
+            // Work out the stored record on a scratch patient first: the rule stays in Patient.SetTooth,
+            // and a failed write leaves the chart as it was.
+            var probe = new Patient();
+            probe.SetTooth(tooth, state, note);
+            _database.SaveTooth(patient.Id, tooth, probe.FindTooth(tooth));
+
             patient.SetTooth(tooth, state, note);
-            Commit();
+            OnChanged();
         }
 
         public bool TryDeletePatient(Patient patient, out string reason)
@@ -211,10 +216,11 @@ namespace StomaDesk.Data
                 return false;
             }
 
+            _database.DeletePatient(patient.Id);
             _data.Appointments.RemoveAll(a => a.PatientId == patient.Id);
             _data.Patients.Remove(patient);
             reason = null;
-            Commit();
+            OnChanged();
             return true;
         }
 
@@ -300,12 +306,12 @@ namespace StomaDesk.Data
             if (FindConflict(appointment) != null)
                 throw new InvalidOperationException("Intervalul se suprapune cu altă programare a medicului.");
 
-            if (appointment.Id == 0)
-            {
-                appointment.Id = _data.NewId();
+            // The database checks the overlap again, against what other workstations saved meanwhile.
+            bool isNew = appointment.Id == 0;
+            _database.SaveAppointment(appointment);
+            if (isNew)
                 _data.Appointments.Add(appointment);
-            }
-            Commit();
+            OnChanged();
         }
 
         public void SetAppointmentStatus(Appointment appointment, AppointmentStatus status)
@@ -316,14 +322,16 @@ namespace StomaDesk.Data
             if (FindConflict(probe) != null)
                 throw new InvalidOperationException("Intervalul a fost ocupat între timp de altă programare a medicului.");
 
+            _database.SetAppointmentStatus(appointment.Id, status);
             appointment.Status = status;
-            Commit();
+            OnChanged();
         }
 
         public void DeleteAppointment(Appointment appointment)
         {
+            _database.DeleteAppointment(appointment.Id);
             _data.Appointments.Remove(appointment);
-            Commit();
+            OnChanged();
         }
 
         public void MarkRemindersSent(IEnumerable<int> appointmentIds)
@@ -332,12 +340,13 @@ namespace StomaDesk.Data
             if (ids.Count == 0)
                 return;
 
+            _database.MarkRemindersSent(ids);
             foreach (Appointment a in _data.Appointments)
             {
                 if (ids.Contains(a.Id))
                     a.ReminderSent = true;
             }
-            Commit();
+            OnChanged();
         }
 
         // ---------------------------------------------------------------- treatment plan
@@ -366,7 +375,6 @@ namespace StomaDesk.Data
 
             var item = new TreatmentItem
             {
-                Id = _data.NewId(),
                 PatientId = patientId,
                 ProcedureId = procedure.Id,
                 ProcedureName = procedure.Name,
@@ -376,19 +384,26 @@ namespace StomaDesk.Data
                 DiscountPercent = discountPercent,
                 Status = TreatmentStatus.Proposed
             };
+            _database.AddTreatment(item);   // sets item.Id
             _data.Treatments.Add(item);
-            Commit();
+            OnChanged();
             return item;
         }
 
         public void SetTreatmentStatus(IEnumerable<TreatmentItem> items, TreatmentStatus status)
         {
-            foreach (TreatmentItem item in items)
+            List<TreatmentItem> list = items.ToList();
+            List<DateTime?> completedAt = list
+                .Select(item => status == TreatmentStatus.Done ? (DateTime?)(item.CompletedAt ?? DateTime.Now) : null)
+                .ToList();
+
+            _database.SetTreatmentStatus(list.Select(item => item.Id).ToList(), status, completedAt);
+            for (int i = 0; i < list.Count; i++)
             {
-                item.Status = status;
-                item.CompletedAt = status == TreatmentStatus.Done ? (DateTime?)(item.CompletedAt ?? DateTime.Now) : null;
+                list[i].Status = status;
+                list[i].CompletedAt = completedAt[i];
             }
-            Commit();
+            OnChanged();
         }
 
         public bool TryDeleteTreatment(TreatmentItem item, out string reason)
@@ -399,9 +414,10 @@ namespace StomaDesk.Data
                 return false;
             }
 
+            _database.DeleteTreatment(item.Id);
             _data.Treatments.Remove(item);
             reason = null;
-            Commit();
+            OnChanged();
             return true;
         }
 
@@ -422,17 +438,15 @@ namespace StomaDesk.Data
             if (payment.Amount <= 0m)
                 throw new ArgumentException("Suma încasată trebuie să fie mai mare decât zero.");
 
-            payment.Id = _data.NewId();
-            payment.ReceiptNo = _data.NewReceiptNo();
+            _database.AddPayment(payment);   // sets Id and the next receipt number
             _data.Payments.Add(payment);
-            Commit();
+            OnChanged();
         }
 
         // ---------------------------------------------------------------- internals
 
-        private void Commit()
+        private void OnChanged()
         {
-            Save();
             EventHandler handler = Changed;
             if (handler != null)
                 handler(this, EventArgs.Empty);

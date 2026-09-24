@@ -92,7 +92,7 @@ namespace StomaDesk.Forms
             //
             this.mnuOpenDataFolder.Name = "mnuOpenDataFolder";
             this.mnuOpenDataFolder.Size = new System.Drawing.Size(240, 22);
-            this.mnuOpenDataFolder.Text = "Deschide folderul cu &date";
+            this.mnuOpenDataFolder.Text = "Deschide folderul cu &jurnalul de erori";
             this.mnuOpenDataFolder.Click += new System.EventHandler(this.mnuOpenDataFolder_Click);
             //
             // mnuFileSeparator

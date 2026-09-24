@@ -1,6 +1,14 @@
 # StomaDesk
 
-Aplicație desktop de gestiune pentru un cabinet stomatologic, scrisă în **C# cu Windows Forms** pe **.NET Framework 4.5**. Este un proiect de exercițiu, construit în stilul produselor iDava (iStoma, iClinic, iStoma LTD). Nu conține cod sau date iDava; toți pacienții sunt fictivi.
+Aplicație desktop de gestiune pentru un cabinet stomatologic, scrisă în **C# cu Windows Forms** pe **.NET Framework 4.5**, cu datele în **PostgreSQL**. Este un proiect de exercițiu, construit în stilul produselor iDava (iStoma, iClinic, iStoma LTD). Nu conține cod sau date iDava; toți pacienții sunt fictivi.
+
+| | |
+|---|---|
+| Limbaj | C# 5 (`<LangVersion>5</LangVersion>`) |
+| Platformă | .NET Framework 4.5, Windows Forms |
+| Bază de date | PostgreSQL 13 sau mai nou, prin Npgsql 4.0 |
+| Rulează pe | Windows; Linux cu Mono; macOS cu Wine |
+| Verificări | `--selftest` (56 de verificări fără interfață), `--smoke` (toate cele 10 ecrane, cu capturi) |
 
 ![Agenda](docs/agenda.png)
 
@@ -70,12 +78,38 @@ De aceea proiectul are `<LangVersion>5</LangVersion>` în `StomaDesk.csproj`: co
 | tuple `(a, b)` | C# 7 | o clasă mică sau `out` |
 | pattern matching `is Type t` | C# 7 | `as` urmat de verificare la `null` |
 
-## Rulare pe Linux
+## Baza de date
 
-Este nevoie de .NET SDK (6 sau mai nou) pentru build și de Mono pentru rulare:
+Datele stau în PostgreSQL 13 sau mai nou. O singură dată se creează utilizatorul și baza de date:
 
 ```bash
-sudo apt install mono-complete      # o singură dată
+psql -d postgres -c "CREATE ROLE stomadesk LOGIN PASSWORD 'stomadesk'"
+createdb -O stomadesk -E UTF8 -T template0 stomadesk
+```
+
+La prima pornire aplicația își creează singură tabelele (`Data/Schema.sql`, inclus în exe) și umple baza goală cu date demo. Conexiunea stă în `StomaDesk.exe.config`, lângă exe (în proiect: `App.config`), deci pe alt calculator se schimbă acolo, fără recompilare. Parola `stomadesk` este doar pentru dezvoltare, pe calculatorul propriu.
+
+```xml
+<add name="StomaDesk" connectionString="Host=localhost;Port=5432;Database=stomadesk;Username=stomadesk;Password=stomadesk" />
+```
+
+La pornire aplicația citește toată clinica într-o singură tranzacție. Fiecare modificare se scrie imediat, într-o tranzacție: întâi în baza de date, apoi în memorie, deci o salvare eșuată nu lasă pe ecran date care nu există în bază. Regulile se verifică în `ClinicStore`; PostgreSQL le repetă pe cele care trebuie să țină și când lucrează mai multe calculatoare pe aceeași bază:
+
+| Regulă | În aplicație | În PostgreSQL |
+|---|---|---|
+| un medic nu are două programări suprapuse | `ClinicStore.FindConflict` | `EXCLUDE USING gist` pe `tsrange`, cu `btree_gist` |
+| un CNP aparține unui singur pacient | `ClinicStore.IsCnpTaken` | index unic parțial `patients_cnp_key` |
+| numerele de chitanță nu se repetă | | secvența `receipt_numbers` |
+| nu se șterge ce are istoric | `TryDeletePatient`, `SaveSettings` | chei străine |
+
+Un calculator nu vede ce a salvat altul până la repornire; baza de date împiedică însă suprapunerile și dublurile dintre ele.
+
+## Rulare pe Linux
+
+Este nevoie de .NET SDK (6 sau mai nou) pentru build, de Mono pentru rulare și de PostgreSQL, pregătit ca mai sus:
+
+```bash
+sudo apt install mono-complete postgresql      # o singură dată
 git clone https://github.com/zigazaga4/StomaDesk.git
 cd StomaDesk
 ./run.sh
@@ -83,33 +117,67 @@ cd StomaDesk
 
 `run.sh` face build și pornește aplicația cu Mono. Dacă Mono lipsește, încearcă Wine; prima dată Wine cere instalarea pachetului Wine Mono, care se acceptă.
 
-La prima pornire se creează datele demo: 3 medici, 15 proceduri, 13 pacienți și programări pentru trei săptămâni în jurul zilei de azi. Fișierul este:
+La prima pornire, într-o bază goală, se creează datele demo: 3 medici, 15 proceduri, 13 pacienți și programări pentru trei săptămâni în jurul zilei de azi. Pentru a reporni cu date demo proaspete, se recreează baza:
 
-| Sistem | Fișier |
+```bash
+dropdb stomadesk && createdb -O stomadesk -E UTF8 -T template0 stomadesk
+```
+
+Erorile neprevăzute se scriu în jurnal:
+
+| Sistem | Jurnal de erori |
 |---|---|
-| Linux cu Mono | `~/.config/StomaDesk/clinic.xml` |
-| Windows | `%APPDATA%\StomaDesk\clinic.xml` |
-
-Pentru a reporni cu date demo proaspete, șterge fișierul.
+| Linux cu Mono | `~/.config/StomaDesk/erori.log` |
+| macOS cu Wine | `~/.wine/drive_c/users/<utilizator>/AppData/Roaming/StomaDesk/erori.log` |
+| Windows | `%APPDATA%\StomaDesk\erori.log` |
 
 Opțiuni în linia de comandă:
 
 | Comandă | Ce face |
 |---|---|
-| `./run.sh --data fisier.xml` | lucrează pe alt fișier de date |
-| `./run.sh --selftest` | 51 de verificări fără interfață (CNP, căutare, suprapuneri, sold, SMS, rapoarte, desenare); codul de ieșire 0 înseamnă totul în regulă |
+| `./run.sh --db "Host=...;Database=...;Username=...;Password=..."` | lucrează pe altă bază de date, doar la această pornire |
+| `./run.sh --import copie.xml` | încarcă o copie de siguranță (Fișier > Copie de siguranță) într-o bază goală, cu aceleași id-uri |
+| `./run.sh --selftest` | 56 de verificări fără interfață (CNP, căutare, suprapuneri, sold, SMS, rapoarte, desenare, PostgreSQL folosit de pe două calculatoare, copie de siguranță); codul de ieșire 0 înseamnă totul în regulă |
 | `./run.sh --smoke --out folder` | deschide fiecare fereastră și fiecare pagină și salvează câte o captură în folder (pe Windows prin GDI, pe Linux cu Mono prin X11) |
+
+`--selftest` și `--smoke` lucrează pe date demo într-o schemă temporară a bazei (`stomadesk_test_...`), ștearsă la final, deci nu ating pacienții reali.
+
+## Rulare pe macOS
+
+Testat pe macOS 15 cu Wine 11.0. `run.sh` face build cu .NET SDK și pornește aplicația cu Wine; Wine Mono (runtime-ul .NET din Wine) vine inclus în pachetul de mai jos. Pe Apple Silicon, Wine rulează prin Rosetta 2.
+
+```bash
+brew install postgresql@16 && brew services start postgresql@16     # apoi baza ca în „Baza de date”
+brew install --cask dotnet-sdk                                       # sau scriptul dotnet-install.sh, fără sudo
+```
+
+Homebrew a dezactivat pe 1 septembrie 2026 pachetele `wine-stable` și `wine@staging`, pentru că nu trec de Gatekeeper. Aceeași versiune se ia direct de la Gcenx, cel care o construia și pentru Homebrew:
+
+```bash
+curl -L -o /tmp/wine.tar.xz https://github.com/Gcenx/macOS_Wine_builds/releases/download/11.0_1/wine-stable-11.0_1-osx64.tar.xz
+tar -xJf /tmp/wine.tar.xz -C /Applications
+export PATH="/Applications/Wine Stable.app/Contents/Resources/wine/bin:$PATH"     # și în ~/.zshrc
+```
+
+Pornirea, cu mesajele de diagnostic ale Wine și MoltenVK oprite:
+
+```bash
+cd StomaDesk
+MVK_CONFIG_LOG_LEVEL=0 WINEDEBUG=-all ./run.sh
+```
 
 ## Rulare pe Windows
 
-Se deschide `StomaDesk.sln` în Visual Studio 2019 sau 2022 și se apasă F5. Formularele au fișiere `.Designer.cs` scrise în formatul designerului, deci se deschid și în editorul vizual.
+Se instalează PostgreSQL (instalatorul de pe postgresql.org) și se pregătește baza ca în secțiunea „Baza de date”. Apoi se deschide `StomaDesk.sln` în Visual Studio 2019 sau 2022 și se apasă F5. Formularele au fișiere `.Designer.cs` scrise în formatul designerului, deci se deschid și în editorul vizual.
 
 ## Structura proiectului
 
 ```
 src/StomaDesk/
+  Program.cs     pornirea și opțiunile din linia de comandă
+  App.config     conexiunea la PostgreSQL (la build devine StomaDesk.exe.config)
   Models/        clasele de date: Patient, Appointment, TreatmentItem, Payment, Doctor, Procedure
-  Data/          ClinicStore (toate regulile și salvarea), XmlClinicFile, SampleData
+  Data/          ClinicStore (toate regulile), ClinicDatabase și Schema.sql (PostgreSQL), XmlClinicFile (copia de siguranță), SampleData
   Services/      CNP, telefon, formatare, remindere SMS, rapoarte, deviz (GDI+ și tipărire)
   Controls/      controale desenate de mână: OdontogramControl, NavBar, Card, Badge, Avatar
   Forms/         ferestrele și paginile, fiecare cu fișierul lui .Designer.cs
@@ -131,7 +199,10 @@ src/StomaDesk/
 | `async` / `await`, `Task.Run`, `IProgress<T>`, `CancellationToken` fără să blocheze UI thread | `Forms/AgendaView.cs`, `Services/Reminders.cs` |
 | `Timer` pentru căutare cu întârziere (debounce) | `Forms/PatientsView.cs` |
 | `PrintDocument` și `PrintPreviewDialog`, același desen salvat și ca PNG | `Services/Estimate.cs` |
-| `XmlSerializer` cu salvare atomică (fișier temporar, apoi `File.Replace`) | `Data/XmlClinicFile.cs` |
+| ADO.NET cu Npgsql: conexiuni din pool, parametri, tranzacții, mai multe rezultate într-o singură comandă | `Data/ClinicDatabase.cs` |
+| reguli în schemă: `EXCLUDE USING gist`, index unic parțial, secvență, chei străine | `Data/Schema.sql` |
+| șir de conexiune în `App.config`, citit cu `ConfigurationManager` | `App.config`, `Data/ClinicDatabase.cs` |
+| copie de siguranță cu `XmlSerializer` și salvare atomică (fișier temporar, apoi `File.Replace`) | `Data/XmlClinicFile.cs` |
 | reguli de business într-un singur loc, nu în ferestre | `Data/ClinicStore.cs` |
 | formatare românească independentă de setările Windows | `Services/Fmt.cs` |
 

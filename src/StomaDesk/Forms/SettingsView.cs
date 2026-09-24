@@ -59,7 +59,7 @@ namespace StomaDesk.Forms
             txtClinicAddress.Text = info.Address;
             txtClinicPhone.Text = info.Phone;
             txtClinicFiscal.Text = info.FiscalCode;
-            lblDataFile.Text = "Fișier de date: " + Store.FilePath;
+            lblDataFile.Text = "Baza de date: " + Store.Location;
             _loading = false;
             SetDirty(false);
         }

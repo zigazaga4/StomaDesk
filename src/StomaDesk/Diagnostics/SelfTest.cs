@@ -17,11 +17,12 @@ namespace StomaDesk.Diagnostics
 {
     /// <summary>
     /// Checks that run from the command line, so the app can be verified on a machine without Visual Studio
-    /// (for example with Mono on Linux). They always work on a temporary copy of the demo data.
+    /// (for example with Mono on Linux). They always work on fresh demo data in a temporary schema of the
+    /// database, dropped at the end, so real patients are never touched.
     /// </summary>
     internal static class SelfTest
     {
-        public static bool Run(TextWriter log, string outputFolder)
+        public static bool Run(TextWriter log, ClinicDatabase database, string outputFolder)
         {
             var check = new Checker(log);
             log.WriteLine("StomaDesk self-test");
@@ -29,15 +30,18 @@ namespace StomaDesk.Diagnostics
             CheckCnp(check);
             CheckText(check);
 
-            string path = TempDataPath();
+            ClinicDatabase scratch = null;
             try
             {
-                ClinicStore store = ClinicStore.Open(path);
-                CheckStore(check, store, path);
+                scratch = database.CreateScratchSchema();
+                ClinicStore store = ClinicStore.Open(scratch);
+                CheckStore(check, store, scratch);
                 CheckRules(check, store);
                 CheckReminders(check, store);
                 CheckReports(check, store, outputFolder);
                 CheckDrawing(check, store, outputFolder);
+                CheckWorkstations(check, store, scratch);
+                CheckBackup(check, store, database);
             }
             catch (Exception ex)
             {
@@ -45,7 +49,8 @@ namespace StomaDesk.Diagnostics
             }
             finally
             {
-                DeleteTemp(path);
+                if (scratch != null)
+                    scratch.DropScratchSchema();
             }
             return check.Report();
         }
@@ -54,14 +59,15 @@ namespace StomaDesk.Diagnostics
         /// Opens every window and tab once. Needs a display (Windows, or X11 on Linux).
         /// With an output folder it also saves a screenshot of each screen there.
         /// </summary>
-        public static bool RunUi(TextWriter log, string outputFolder)
+        public static bool RunUi(TextWriter log, ClinicDatabase database, string outputFolder)
         {
             var check = new Checker(log);
             log.WriteLine("StomaDesk UI smoke test");
-            string path = TempDataPath();
+            ClinicDatabase scratch = null;
             try
             {
-                ClinicStore store = ClinicStore.Open(path);
+                scratch = database.CreateScratchSchema();
+                ClinicStore store = ClinicStore.Open(scratch);
                 using (var main = new MainForm(store))
                 {
                     main.StartPosition = FormStartPosition.Manual;
@@ -114,7 +120,8 @@ namespace StomaDesk.Diagnostics
             }
             finally
             {
-                DeleteTemp(path);
+                if (scratch != null)
+                    scratch.DropScratchSchema();
             }
             return check.Report();
         }
@@ -166,7 +173,7 @@ namespace StomaDesk.Diagnostics
             check.Check("format bani 1.250,50 lei", Fmt.Money(1250.5m) == "1.250,50 lei");
         }
 
-        private static void CheckStore(Checker check, ClinicStore store, string path)
+        private static void CheckStore(Checker check, ClinicStore store, ClinicDatabase database)
         {
             List<Patient> patients = store.FindPatients("");
             check.Check("date demo: 13 pacienți", patients.Count == 13);
@@ -174,12 +181,13 @@ namespace StomaDesk.Diagnostics
             check.Check("date demo: programări mâine", store.AppointmentsOn(DateTime.Today.AddDays(1)).Count > 0
                 || DateTime.Today.AddDays(1).DayOfWeek == DayOfWeek.Sunday);
 
-            ClinicStore reopened = ClinicStore.Open(path);
-            check.Check("XML salvat și recitit: aceiași pacienți", reopened.FindPatients("").Count == patients.Count);
-            check.Check("XML salvat și recitit: aceleași programări",
+            ClinicStore reopened = ClinicStore.Open(database);
+            check.Check("PostgreSQL recitit: aceiași pacienți", reopened.FindPatients("").Count == patients.Count);
+            check.Check("PostgreSQL recitit: aceleași programări",
                 reopened.AppointmentsBetween(DateTime.Today.AddDays(-30), DateTime.Today.AddDays(30)).Count
                 == store.AppointmentsBetween(DateTime.Today.AddDays(-30), DateTime.Today.AddDays(30)).Count);
-            check.Check("XML salvat și recitit: diacritice intacte", reopened.FindPatients("serban").Any(p => p.LastName == "Șerban"));
+            check.Check("PostgreSQL recitit: diacritice intacte", reopened.FindPatients("serban").Any(p => p.LastName == "Șerban"));
+            check.Check("PostgreSQL recitit: ore, sume și dinți identici", SameDetails(store, reopened));
 
             check.Check("căutare fără diacritice (serban)", store.FindPatients("serban").Count == 1);
             check.Check("căutare prenume înainte de nume (ion popescu)", store.FindPatients("ion popescu").Count == 1);
@@ -323,6 +331,82 @@ namespace StomaDesk.Diagnostics
                 foreach (Bitmap page in pages)
                     page.Dispose();
             }
+        }
+
+        /// <summary>
+        /// Two workstations on one database. The second one's memory does not know what the first just saved,
+        /// so only PostgreSQL can stop the double booking; their receipt numbers must differ as well.
+        /// </summary>
+        private static void CheckWorkstations(Checker check, ClinicStore first, ClinicDatabase database)
+        {
+            ClinicStore second = ClinicStore.Open(database);
+            Patient patient = first.FindPatients("").First();
+            int doctorId = first.ActiveDoctors[0].Id;
+            DateTime early = DateTime.Today.AddDays(2).AddHours(7);   // before opening hours, so the demo agenda is free there
+
+            first.SaveAppointment(new Appointment { PatientId = patient.Id, DoctorId = doctorId, Start = early, DurationMinutes = 30 });
+            bool refused = false;
+            try
+            {
+                second.SaveAppointment(new Appointment { PatientId = patient.Id, DoctorId = doctorId, Start = early.AddMinutes(15), DurationMinutes = 30 });
+            }
+            catch (InvalidOperationException)
+            {
+                refused = true;
+            }
+            check.Check("PostgreSQL refuză suprapunerea salvată de pe alt calculator",
+                refused && second.AppointmentsOn(early).All(a => a.Start != early.AddMinutes(15)));
+
+            var one = new Payment { PatientId = patient.Id, Amount = 10m };
+            var other = new Payment { PatientId = patient.Id, Amount = 10m };
+            first.AddPayment(one);
+            second.AddPayment(other);
+            check.Check("chitanțe diferite de pe calculatoare diferite", one.ReceiptNo != other.ReceiptNo);
+        }
+
+        /// <summary>File > Copie de siguranță writes XML; --import loads it back, but only into an empty database.</summary>
+        private static void CheckBackup(Checker check, ClinicStore store, ClinicDatabase database)
+        {
+            string path = TempDataPath();
+            ClinicDatabase restored = null;
+            try
+            {
+                store.ExportXml(path);
+                restored = database.CreateScratchSchema();
+                bool imported = ClinicStore.Import(restored, path);
+                check.Check("copia de siguranță XML se importă identic", imported && SameDetails(store, ClinicStore.Open(restored)));
+                check.Check("importul refuză o bază de date care are deja o clinică", !ClinicStore.Import(restored, path));
+            }
+            finally
+            {
+                DeleteTemp(path);
+                if (restored != null)
+                    restored.DropScratchSchema();
+            }
+        }
+
+        /// <summary>Compares what a trip through PostgreSQL or XML could bend: times (time zones), money (decimals), statuses, teeth.</summary>
+        private static bool SameDetails(ClinicStore a, ClinicStore b)
+        {
+            return Fingerprint(a) == Fingerprint(b);
+        }
+
+        private static string Fingerprint(ClinicStore store)
+        {
+            var text = new StringBuilder();
+            foreach (Appointment x in store.AppointmentsBetween(DateTime.Today.AddDays(-60), DateTime.Today.AddDays(30)).OrderBy(x => x.Id))
+                text.AppendFormat("A{0}:{1:yyyyMMddHHmm}:{2}:{3}:{4}:{5};", x.Id, x.Start, x.DurationMinutes, x.Status, x.ReminderSent, x.Reason);
+            foreach (Patient p in store.FindPatients("").OrderBy(p => p.Id))
+            {
+                text.AppendFormat("P{0}:{1}:{2}:{3:yyyyMMdd}:{4};", p.Id, p.FullName, p.Cnp, p.BirthDate, store.BalanceFor(p.Id).Due);
+                foreach (ToothRecord t in p.Teeth.OrderBy(t => t.Tooth))
+                    text.AppendFormat("T{0}:{1}:{2};", t.Tooth, t.State, t.Note);
+                foreach (TreatmentItem i in store.TreatmentsFor(p.Id).OrderBy(i => i.Id))
+                    text.AppendFormat("I{0}:{1}:{2}:{3}:{4}:{5:yyyyMMddHHmm};", i.Id, i.Price, i.DiscountPercent, i.Status, i.Tooth, i.CompletedAt);
+                foreach (Payment m in store.PaymentsFor(p.Id).OrderBy(m => m.Id))
+                    text.AppendFormat("M{0}:{1}:{2}:{3:yyyyMMddHHmm};", m.ReceiptNo, m.Amount, m.Method, m.Date);
+            }
+            return text.ToString();
         }
 
         /// <summary>Counts pixels that are not (almost) white, sampled every 2 px.</summary>

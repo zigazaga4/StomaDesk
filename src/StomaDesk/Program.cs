@@ -13,11 +13,14 @@ namespace StomaDesk
     internal static class Program
     {
         /// <summary>
-        /// StomaDesk.exe                   normal start, data in %APPDATA%\StomaDesk\clinic.xml
-        /// StomaDesk.exe --data file.xml   use another data file
+        /// StomaDesk.exe                   normal start, data in the PostgreSQL database set in StomaDesk.exe.config
+        /// StomaDesk.exe --db "Host=...;Database=...;Username=...;Password=..."   another database, for this run only
+        /// StomaDesk.exe --import file.xml loads an XML backup (or the data file of the XML-only version) into an empty database
         /// StomaDesk.exe --selftest [--out folder]   checks without a window; exit code 0 = all passed
-        /// StomaDesk.exe --smoke [--out folder]      opens every window and tab once on a throwaway copy of the demo data
+        /// StomaDesk.exe --smoke [--out folder]      opens every window and tab once on throwaway demo data
         ///                                           (with --out it also saves a screenshot of each screen)
+        /// The self-test and the smoke test work in a temporary schema of the database and drop it at the end,
+        /// so they never touch real patients.
         /// </summary>
         [STAThread]
         private static int Main(string[] args)
@@ -25,7 +28,14 @@ namespace StomaDesk
             if (HasFlag(args, "--selftest"))
             {
                 UseUtf8Console();
-                return SelfTest.Run(Console.Out, OptionValue(args, "--out")) ? 0 : 1;
+                return SelfTest.Run(Console.Out, Database(args), OptionValue(args, "--out")) ? 0 : 1;
+            }
+
+            string importPath = OptionValue(args, "--import");
+            if (importPath != null)
+            {
+                UseUtf8Console();
+                return Import(Database(args), importPath);
             }
 
             Application.EnableVisualStyles();
@@ -37,25 +47,55 @@ namespace StomaDesk
             if (HasFlag(args, "--smoke"))
             {
                 UseUtf8Console();
-                return SelfTest.RunUi(Console.Out, OptionValue(args, "--out")) ? 0 : 1;
+                return SelfTest.RunUi(Console.Out, Database(args), OptionValue(args, "--out")) ? 0 : 1;
             }
 
-            string path = OptionValue(args, "--data") ?? ClinicStore.DefaultPath;
+            ClinicDatabase database = null;
             ClinicStore store;
             try
             {
-                store = ClinicStore.Open(path);
+                database = Database(args);
+                store = ClinicStore.Open(database);
             }
             catch (Exception ex)
             {
                 ErrorLog.Write(ex);
-                MessageBox.Show("Fișierul de date nu poate fi deschis:\n" + path + "\n\n" + ex.Message,
+                MessageBox.Show(
+                    "Baza de date nu poate fi deschisă:\n" + (database == null ? "" : database.Description) + "\n\n" + ex.Message +
+                    "\n\nVerificați că serverul PostgreSQL pornește și conexiunea din StomaDesk.exe.config.",
                     "StomaDesk", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return 1;
             }
 
             Application.Run(new MainForm(store) { WindowState = FormWindowState.Maximized });
             return 0;
+        }
+
+        /// <summary>The database from --db when given, otherwise the one in StomaDesk.exe.config.</summary>
+        private static ClinicDatabase Database(string[] args)
+        {
+            string connectionString = OptionValue(args, "--db");
+            return connectionString != null ? new ClinicDatabase(connectionString) : ClinicDatabase.FromConfig();
+        }
+
+        private static int Import(ClinicDatabase database, string path)
+        {
+            try
+            {
+                if (!ClinicStore.Import(database, path))
+                {
+                    Console.WriteLine("{0} are deja o clinică. Importul se face doar într-o bază de date goală.", database.Description);
+                    return 1;
+                }
+                Console.WriteLine("Datele din {0} au fost importate în {1}.", path, database.Description);
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                ErrorLog.Write(ex);
+                Console.WriteLine("Importul nu a reușit: " + ex.Message);
+                return 1;
+            }
         }
 
         /// <summary>Last line of defence for exceptions thrown in UI event handlers: log, tell the user, keep running.</summary>
